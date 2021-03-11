@@ -79,12 +79,12 @@ where
     /// Crates a new `ValidationRequest` starting from the payload provided
     /// to the policy at invocation time.
     pub fn new(payload: &[u8]) -> anyhow::Result<Self> {
-        serde_json::from_slice::<ValidationRequest<T>>(payload).or_else(|e| {
-            Err(anyhow!(
+        serde_json::from_slice::<ValidationRequest<T>>(payload).map_err(|e| {
+            anyhow!(
                 "Error decoding validation payload {}: {:?}",
                 String::from_utf8_lossy(payload),
                 e
-            ))
+            )
         })
     }
 
