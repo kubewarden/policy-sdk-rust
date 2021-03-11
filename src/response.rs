@@ -8,4 +8,6 @@ pub struct ValidationResponse {
     pub accepted: bool,
     /// Message shown to the user when the request is rejected
     pub message: Option<String>,
+    /// Code shown to the user when the request is rejected
+    pub code: Option<u16>,
 }
