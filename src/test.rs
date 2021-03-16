@@ -15,7 +15,7 @@ fn read_request_file(path: &str) -> anyhow::Result<serde_json::Value> {
 
 fn make_validate_payload<T>(request_file: &str, settings: &T) -> String
 where
-    T: DeserializeOwned + Serialize + crate::settings::Trusties,
+    T: DeserializeOwned + Serialize,
 {
     let req = read_request_file(request_file).unwrap();
     let payload = json!({
@@ -31,7 +31,7 @@ type ValidateFn = fn(&[u8]) -> wapc_guest::CallResult;
 
 pub struct Testcase<T>
 where
-    T: DeserializeOwned + crate::settings::Trusties,
+    T: DeserializeOwned,
 {
     pub name: String,
     pub fixture_file: String,
@@ -42,7 +42,7 @@ where
 #[allow(dead_code)]
 impl<T> Testcase<T>
 where
-    T: DeserializeOwned + Serialize + crate::settings::Trusties,
+    T: DeserializeOwned + Serialize,
 {
     pub fn eval(&self, validate: ValidateFn) -> anyhow::Result<()> {
         let payload = make_validate_payload(self.fixture_file.as_str(), &self.settings);

@@ -1,5 +1,3 @@
-use crate::settings::*;
-
 use anyhow::anyhow;
 use jmespatch::{Expression, JmespathError, Rcvar, Variable};
 use serde::{de::DeserializeOwned, Deserialize};
@@ -51,30 +49,11 @@ pub struct UserInfo {
     pub groups: HashSet<String>,
 }
 
-impl UserInfo {
-    /// is_trusted returns `true` if the user who originated the AdmissionReview
-    /// is one of the trusted users or belongs to a trusted group
-    ///
-    /// # Arguments
-    /// * `trusted_users` - a list of usernames that are trusted by the policy
-    /// * `trusted_groups` - a list of groups that are trusted by the policy
-    pub fn is_trusted(
-        &self,
-        trusted_users: HashSet<String>,
-        trusted_groups: HashSet<String>,
-    ) -> bool {
-        if trusted_users.contains(&self.username) {
-            return true;
-        }
-
-        let common_groups = trusted_groups.intersection(&self.groups);
-        common_groups.count() > 0
-    }
 }
 
 impl<T> ValidationRequest<T>
 where
-    T: DeserializeOwned + Trusties,
+    T: DeserializeOwned,
 {
     /// Crates a new `ValidationRequest` starting from the payload provided
     /// to the policy at invocation time.
@@ -93,13 +72,5 @@ where
     pub fn search(&self, expr: Expression) -> Result<Rcvar, JmespathError> {
         let data = Variable::from_serializable::<serde_json::Value>(self.request.object.clone())?;
         expr.search(data)
-    }
-
-    /// Returns `true` if the AdmissionReview has been made by a trusted user
-    pub fn is_request_made_by_trusted_user(&self) -> bool {
-        self.request.user_info.is_trusted(
-            self.settings.trusted_users(),
-            self.settings.trusted_groups(),
-        )
     }
 }

@@ -1,6 +1,5 @@
 pub mod request;
 pub mod response;
-pub mod settings;
 pub mod test;
 
 use crate::response::*;
