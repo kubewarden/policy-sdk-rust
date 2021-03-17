@@ -30,9 +30,33 @@ pub fn reject_request(message: Option<String>, code: Option<u16>) -> wapc_guest:
 
 /// waPC guest function to register under the name `validate_settings`
 /// # Example
-//
+///
 /// ```
-/// // Settings is a user defined Setting struct
+/// use chimera_kube_policy_sdk::{validate_settings, settings::Validatable};
+/// use serde::Deserialize;
+/// use wapc_guest::register_function;
+///
+/// // This module settings require either `setting_a` or `setting_b`
+/// // set. Both cannot be provided at the same time, and one has to be
+/// // provided.
+/// #[derive(Deserialize)]
+/// struct Settings {
+///   setting_a: Option<String>,
+///   setting_b: Option<String>
+/// }
+///
+/// impl Validatable for Settings {
+///   fn validate(&self) -> Result<(), String> {
+///     if self.setting_a.is_none() && self.setting_b.is_none() {
+///       Err("either setting A or setting B has to be provided".to_string())
+///     } else if self.setting_a.is_some() && self.setting_b.is_some() {
+///       Err("setting A and setting B cannot be set at the same time".to_string())
+///     } else {
+///       Ok(())
+///     }
+///   }
+/// }
+///
 /// register_function("validate_settings", validate_settings::<Settings>);
 /// ```
 pub fn validate_settings<T>(payload: &[u8]) -> wapc_guest::CallResult
