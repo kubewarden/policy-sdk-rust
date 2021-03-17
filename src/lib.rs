@@ -54,7 +54,7 @@ where
         },
         Err(e) => settings::SettingsValidationResponse {
             valid: false,
-            message: Some(e.to_string()),
+            message: Some(e),
         },
     };
 
