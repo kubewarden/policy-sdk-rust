@@ -15,12 +15,10 @@ pub fn accept_request(mutated_object: Option<serde_json::Value>) -> wapc_guest::
         accepted: true,
         message: None,
         code: None,
-        mutated_object: mutated_object.and_then(|o| {
-            Some(
-                serde_json::to_string(&o)
-                    .map_err(|e| anyhow!("cannot serialize mutated object: {:?}", e))
-                    .unwrap(),
-            )
+        mutated_object: mutated_object.map(|o| {
+            serde_json::to_string(&o)
+                .map_err(|e| anyhow!("cannot serialize mutated object: {:?}", e))
+                .unwrap()
         }),
     })?)
 }
