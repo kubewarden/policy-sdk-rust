@@ -10,4 +10,6 @@ pub struct ValidationResponse {
     pub message: Option<String>,
     /// Code shown to the user when the request is rejected
     pub code: Option<u16>,
+    /// Mutated Object serialized using JSON format - used only by mutation policies
+    pub mutated_object: Option<String>,
 }

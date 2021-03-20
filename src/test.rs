@@ -44,16 +44,16 @@ impl<T> Testcase<T>
 where
     T: DeserializeOwned + Serialize,
 {
-    pub fn eval(&self, validate: ValidateFn) -> anyhow::Result<()> {
+    pub fn eval(&self, validate: ValidateFn) -> anyhow::Result<ValidationResponse> {
         let payload = make_validate_payload(self.fixture_file.as_str(), &self.settings);
         let raw_result = validate(payload.as_bytes()).unwrap();
-        let result: ValidationResponse = serde_json::from_slice(&raw_result)?;
+        let response: ValidationResponse = serde_json::from_slice(&raw_result)?;
         assert_eq!(
-            result.accepted, self.expected_validation_result,
+            response.accepted, self.expected_validation_result,
             "Failure for test case: '{}': got {:?} instead of {:?}",
-            self.name, result.accepted, self.expected_validation_result,
+            self.name, response.accepted, self.expected_validation_result,
         );
 
-        Ok(())
+        Ok(response)
     }
 }
