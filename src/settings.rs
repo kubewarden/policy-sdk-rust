@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 /// Trait that must be implemented by setting
 /// object
 pub trait Validatable {
@@ -7,7 +9,7 @@ pub trait Validatable {
 
 /// A SettingsValidationResponse object holds the outcome of settings
 /// validation.
-#[derive(serde::Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct SettingsValidationResponse {
     /// True if the settings are valid
     pub valid: bool,
