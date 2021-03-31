@@ -108,15 +108,15 @@ impl ClusterContext {
 
 impl ClusterContext {
     /// Return a specific ingress object with a given name and a
-    /// namespace filter. If the namespace filter allows for more than
-    /// one namespace, the ingress resource found that matches one of
-    /// the namespaces and the given name will be returned.
-    pub fn ingress(namespace: NamespaceFilter, name: &str) -> Result<Option<Ingress>> {
+    /// namespace filter. If the namespace filter is broad, more than
+    /// one resource might be returned.
+    pub fn ingress(namespace: NamespaceFilter, name: &str) -> Result<Vec<Ingress>> {
         // TODO (ereslibre): use macros to remove duplication and then
         // generalize
         Ok(Self::ingresses(namespace)?
             .into_iter()
-            .find(|ingress| ingress.metadata.name == Some(name.to_string())))
+            .filter(|ingress| ingress.metadata.name == Some(name.to_string()))
+            .collect())
     }
 
     // Return a specific namespace with a given name.
@@ -129,14 +129,14 @@ impl ClusterContext {
     }
 
     /// Return a specific service object with a given name and a
-    /// namespace filter. If the namespace filter allows for more than
-    /// one namespace, the service resource found that matches one of
-    /// the namespaces and the given name will be returned.
-    pub fn service(namespace: NamespaceFilter, name: &str) -> Result<Option<Service>> {
+    /// namespace filter. If the namespace filter is broad, more than
+    /// one resource might be returned.
+    pub fn service(namespace: NamespaceFilter, name: &str) -> Result<Vec<Service>> {
         // TODO (ereslibre): use macros to remove duplication and then
         // generalize
         Ok(Self::services(namespace)?
             .into_iter()
-            .find(|service| service.metadata.name == Some(name.to_string())))
+            .filter(|service| service.metadata.name == Some(name.to_string()))
+            .collect())
     }
 }
