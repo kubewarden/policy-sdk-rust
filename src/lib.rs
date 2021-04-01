@@ -11,18 +11,27 @@ pub mod test;
 use crate::response::*;
 
 /// Create an acceptance response
-/// # Arguments
-/// * `mutated_object` - the mutated Object - used only by mutation policies
-pub fn accept_request(mutated_object: Option<serde_json::Value>) -> wapc_guest::CallResult {
+pub fn accept_request() -> wapc_guest::CallResult {
     Ok(serde_json::to_vec(&ValidationResponse {
         accepted: true,
         message: None,
         code: None,
-        mutated_object: mutated_object.map(|o| {
-            serde_json::to_string(&o)
-                .map_err(|e| anyhow!("cannot serialize mutated object: {:?}", e))
-                .unwrap()
-        }),
+        mutated_object: None,
+    })?)
+}
+
+/// Create an acceptance response that mutates the original object
+/// # Arguments
+/// * `mutated_object` - the mutated Object
+pub fn mutate_request(mutated_object: &serde_json::Value) -> wapc_guest::CallResult {
+    let mut_obj = serde_json::to_string(mutated_object)
+        .map_err(|e| anyhow!("cannot serialize mutated object: {:?}", e))?;
+
+    Ok(serde_json::to_vec(&ValidationResponse {
+        accepted: true,
+        message: None,
+        code: None,
+        mutated_object: Some(mut_obj),
     })?)
 }
 

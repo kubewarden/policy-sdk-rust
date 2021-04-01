@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use jmespatch::{Expression, JmespathError, Rcvar, Variable};
 use serde::{de::DeserializeOwned, Deserialize};
 use std::collections::{HashMap, HashSet};
 
@@ -152,12 +151,5 @@ where
                 e
             )
         })
-    }
-
-    /// Uses a [JMESPath](https://jmespath.org/) query against the `object`
-    /// attribute of the `ValidationRequest`
-    pub fn search(&self, expr: Expression) -> Result<Rcvar, JmespathError> {
-        let data = Variable::from_serializable::<serde_json::Value>(self.request.object.clone())?;
-        expr.search(data)
     }
 }
