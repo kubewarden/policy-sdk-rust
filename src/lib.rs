@@ -52,7 +52,7 @@ pub fn reject_request(message: Option<String>, code: Option<u16>) -> wapc_guest:
 /// # Example
 ///
 /// ```
-/// use chimera_kube_policy_sdk::{validate_settings, settings::Validatable};
+/// use kubewarden_policy_sdk::{validate_settings, settings::Validatable};
 /// use serde::Deserialize;
 /// use wapc_guest::register_function;
 ///
