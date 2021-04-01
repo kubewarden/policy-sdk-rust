@@ -1,7 +1,10 @@
 [package]
-name = "chimera-kube-policy-sdk"
+name = "kubewarden-policy-sdk"
 version = "0.1.0"
-authors = ["Flavio Castelli <fcastelli@suse.com>"]
+authors = [
+  "Flavio Castelli <fcastelli@suse.com>",
+  "Rafael Fernández López <rfernandezlopez@suse.com>"
+]
 edition = "2018"
 
 [dependencies]
