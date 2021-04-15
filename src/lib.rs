@@ -23,15 +23,12 @@ pub fn accept_request() -> wapc_guest::CallResult {
 /// Create an acceptance response that mutates the original object
 /// # Arguments
 /// * `mutated_object` - the mutated Object
-pub fn mutate_request(mutated_object: &serde_json::Value) -> wapc_guest::CallResult {
-    let mut_obj = serde_json::to_string(mutated_object)
-        .map_err(|e| anyhow!("cannot serialize mutated object: {:?}", e))?;
-
+pub fn mutate_request(mutated_object: serde_json::Value) -> wapc_guest::CallResult {
     Ok(serde_json::to_vec(&ValidationResponse {
         accepted: true,
         message: None,
         code: None,
-        mutated_object: Some(mut_obj),
+        mutated_object: Some(mutated_object),
     })?)
 }
 
@@ -103,4 +100,70 @@ where
     };
 
     Ok(serde_json::to_vec(&res)?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert_json_diff::assert_json_eq;
+    use serde_json::json;
+
+    #[test]
+    fn test_mutate_request() -> Result<(), ()> {
+        let mutated_object = json!({
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "security-context-demo-4"
+            },
+            "spec": {
+                "containers": [
+                {
+                    "name": "sec-ctx-4",
+                    "image": "gcr.io/google-samples/node-hello:1.0",
+                    "securityContext": {
+                        "capabilities": {
+                            "add": ["NET_ADMIN", "SYS_TIME"],
+                            "drop": ["BPF"]
+                        }
+                    }
+                }
+                ]
+            }
+        });
+        let expected_object = mutated_object.clone();
+
+        let reponse_raw = mutate_request(mutated_object).unwrap();
+        let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
+
+        assert_json_eq!(response.mutated_object, expected_object);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_accept_request() -> Result<(), ()> {
+        let reponse_raw = accept_request().unwrap();
+        let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
+
+        assert!(response.mutated_object.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn test_reject_request() -> Result<(), ()> {
+        let code = 500;
+        let expected_code = code.clone();
+
+        let message = String::from("internal error");
+        let expected_message = message.clone();
+
+        let reponse_raw = reject_request(Some(message), Some(code)).unwrap();
+        let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
+
+        assert!(response.mutated_object.is_none());
+        assert_eq!(response.code, Some(expected_code));
+        assert_eq!(response.message, Some(expected_message));
+        Ok(())
+    }
 }
