@@ -3,11 +3,13 @@ extern crate k8s_openapi;
 use anyhow::anyhow;
 
 pub mod cluster_context;
+pub mod metadata;
 pub mod request;
 pub mod response;
 pub mod settings;
 pub mod test;
 
+use crate::metadata::ProtocolVersion;
 use crate::response::*;
 
 /// Create an acceptance response
@@ -102,6 +104,24 @@ where
     Ok(serde_json::to_vec(&res)?)
 }
 
+/// Helper function that provides the `protocol_version` implementation
+/// # Example
+///
+/// ```
+/// extern crate wapc_guest as guest;
+/// use guest::prelude::*;
+/// use kubewarden_policy_sdk::protocol_version_guest;
+///
+/// #[no_mangle]
+/// pub extern "C" fn wapc_init() {
+///     register_function("protocol_version", protocol_version_guest);
+///     // register other waPC functions
+/// }
+/// ```
+pub fn protocol_version_guest(_payload: &[u8]) -> wapc_guest::CallResult {
+    Ok(serde_json::to_vec(&ProtocolVersion::default())?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,6 +184,15 @@ mod tests {
         assert!(response.mutated_object.is_none());
         assert_eq!(response.code, Some(expected_code));
         assert_eq!(response.message, Some(expected_message));
+        Ok(())
+    }
+
+    #[test]
+    fn try_protocol_version_guest() -> Result<(), ()> {
+        let reponse = protocol_version_guest(&[0; 0]).unwrap();
+        let version: ProtocolVersion = serde_json::from_slice(&reponse).unwrap();
+
+        assert_eq!(version, ProtocolVersion::V1);
         Ok(())
     }
 }

@@ -13,8 +13,10 @@ license = "Apache-2.0"
 [dependencies]
 anyhow = "1.0"
 k8s-openapi = { version = "0.11.0", default-features = true, features = ["v1_20"] }
-serde = { version = "1.0", features = ["derive"] }
+num-derive = "0.3"
+num-traits = "0.2"
 serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
 wapc-guest = "0.4.0"
 
 [dev-dependencies]
