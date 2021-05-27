@@ -1,13 +1,13 @@
-use num_derive::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::{convert::TryFrom, fmt};
 
 /// ProtocolVersion describes the version of the communication protocol
 /// used to exchange information between the policy and the policy evaluator.
 ///
 /// Policies built with this SDK provide the right value via the `protocol_version_guest`
 /// function.
-#[derive(Deserialize, Serialize, Debug, Clone, FromPrimitive, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, FromPrimitive, ToPrimitive, PartialEq)]
 pub enum ProtocolVersion {
     /// This is an invalid version
     #[serde(rename = "Unknown")]
@@ -32,24 +32,36 @@ impl TryFrom<Vec<u8>> for ProtocolVersion {
     }
 }
 
+impl fmt::Display for ProtocolVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let version = num::ToPrimitive::to_u64(self).ok_or(fmt::Error)?;
+        write!(f, "{}", version)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn try_from_known_version() -> Result<(), ()> {
-        let version = ProtocolVersion::try_from(b"\"v1\"".to_vec());
-        assert!(version.is_ok());
-        assert_eq!(version.unwrap(), ProtocolVersion::V1);
+    fn protocol_version_try_display() {
+        let version = ProtocolVersion::V1;
+        assert_eq!("1", format!("{}", version));
 
-        Ok(())
+        let version = ProtocolVersion::Unknown;
+        assert_eq!("0", format!("{}", version));
     }
 
     #[test]
-    fn try_from_unknown_version() -> Result<(), ()> {
+    fn protocol_version_try_from_known_version() {
+        let version = ProtocolVersion::try_from(b"\"v1\"".to_vec());
+        assert!(version.is_ok());
+        assert_eq!(version.unwrap(), ProtocolVersion::V1);
+    }
+
+    #[test]
+    fn protocol_version_try_from_unknown_version() {
         let version = ProtocolVersion::try_from(b"\"v100\"".to_vec());
         assert!(version.is_err());
-
-        Ok(())
     }
 }
