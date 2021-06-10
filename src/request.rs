@@ -2,9 +2,9 @@ use anyhow::anyhow;
 use serde::{de::DeserializeOwned, Deserialize};
 use std::collections::{HashMap, HashSet};
 
-/// ValidationRequest holds the data privided to the policy at evaluation time
+/// ValidationRequest holds the data provided to the policy at evaluation time
 #[derive(Deserialize, Debug, Clone)]
-pub struct ValidationRequest<T> {
+pub struct ValidationRequest<T: Default> {
     /// The policy settings
     pub settings: T,
 
@@ -139,7 +139,7 @@ pub struct UserInfo {
 
 impl<T> ValidationRequest<T>
 where
-    T: DeserializeOwned,
+    T: Default + DeserializeOwned,
 {
     /// Crates a new `ValidationRequest` starting from the payload provided
     /// to the policy at invocation time.
