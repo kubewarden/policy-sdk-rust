@@ -3,6 +3,7 @@ extern crate k8s_openapi;
 use anyhow::anyhow;
 
 pub mod cluster_context;
+pub mod logging;
 pub mod metadata;
 pub mod request;
 pub mod response;
