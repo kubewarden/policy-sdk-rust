@@ -5,6 +5,7 @@ use anyhow::anyhow;
 pub mod cluster_context;
 pub mod logging;
 pub mod metadata;
+pub mod oci_callbacks;
 pub mod request;
 pub mod response;
 pub mod settings;

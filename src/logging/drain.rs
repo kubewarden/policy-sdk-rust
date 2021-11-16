@@ -56,6 +56,6 @@ impl slog::Drain for KubewardenDrain {
         let msg = serde_json::to_vec(&event).unwrap();
         wapc_guest::host_call("kubewarden", "tracing", "log", &msg)
             .map(|_| ())
-            .map_err(|e| anyhow::anyhow!("erorr invoking wapc logging facility: {:?}", e))
+            .map_err(|e| anyhow::anyhow!("error invoking wapc logging facility: {:?}", e))
     }
 }
