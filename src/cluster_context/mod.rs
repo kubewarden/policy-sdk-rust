@@ -74,7 +74,7 @@ impl Default for ClusterContext {
         use self::client::TestClient;
 
         ClusterContext {
-            client: Box::new(TestClient::default()),
+            client: Box::new(TestClient {}),
         }
     }
 }

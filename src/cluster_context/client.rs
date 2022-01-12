@@ -36,46 +36,18 @@ impl Client for WapcClient {
 
 /// Fake client used when running unit tests. This should be used when writing
 /// code that doesn't target wasm32
-pub struct TestClient {
-    /// Mock list of ingresses that the waPC fake host will return.
-    pub mock_ingresses: Result<List<Ingress>>,
-
-    /// Mock list of namespaces that the waPC fake host will return.
-    pub mock_namespaces: Result<List<Namespace>>,
-
-    /// Mock list of services that the waPC fake host will return.
-    pub mock_services: Result<List<Service>>,
-}
-
-impl Default for TestClient {
-    fn default() -> Self {
-        TestClient {
-            mock_ingresses: Ok(Default::default()),
-            mock_namespaces: Ok(Default::default()),
-            mock_services: Ok(Default::default()),
-        }
-    }
-}
+pub struct TestClient {}
 
 impl Client for TestClient {
     fn namespaces(&self) -> Result<Vec<u8>> {
-        match &self.mock_namespaces {
-            Ok(v) => Ok(serde_json::to_vec(&v).unwrap()),
-            Err(e) => Err(anyhow!("{}", e)),
-        }
+        Ok(serde_json::to_vec(&List::<Namespace>::default()).unwrap())
     }
 
     fn ingresses(&self) -> Result<Vec<u8>> {
-        match &self.mock_ingresses {
-            Ok(v) => Ok(serde_json::to_vec(&v).unwrap()),
-            Err(e) => Err(anyhow!("{}", e)),
-        }
+        Ok(serde_json::to_vec(&List::<Ingress>::default()).unwrap())
     }
 
     fn services(&self) -> Result<Vec<u8>> {
-        match &self.mock_services {
-            Ok(v) => Ok(serde_json::to_vec(&v).unwrap()),
-            Err(e) => Err(anyhow!("{}", e)),
-        }
+        Ok(serde_json::to_vec(&List::<Service>::default()).unwrap())
     }
 }
