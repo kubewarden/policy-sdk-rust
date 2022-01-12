@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use k8s_openapi::api::core::v1::{Namespace, Service};
 use k8s_openapi::api::networking::v1::Ingress;
+use k8s_openapi::List;
 use wapc_guest as guest;
 
 pub trait Client {
@@ -37,21 +38,21 @@ impl Client for WapcClient {
 /// code that doesn't target wasm32
 pub struct TestClient {
     /// Mock list of ingresses that the waPC fake host will return.
-    pub mock_ingresses: Result<Vec<Ingress>>,
+    pub mock_ingresses: Result<List<Ingress>>,
 
     /// Mock list of namespaces that the waPC fake host will return.
-    pub mock_namespaces: Result<Vec<Namespace>>,
+    pub mock_namespaces: Result<List<Namespace>>,
 
     /// Mock list of services that the waPC fake host will return.
-    pub mock_services: Result<Vec<Service>>,
+    pub mock_services: Result<List<Service>>,
 }
 
 impl Default for TestClient {
     fn default() -> Self {
         TestClient {
-            mock_ingresses: Ok(vec![]),
-            mock_namespaces: Ok(vec![]),
-            mock_services: Ok(vec![]),
+            mock_ingresses: Ok(Default::default()),
+            mock_namespaces: Ok(Default::default()),
+            mock_services: Ok(Default::default()),
         }
     }
 }
