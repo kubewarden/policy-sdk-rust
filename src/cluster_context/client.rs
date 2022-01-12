@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use k8s_openapi::api::core::v1::{Namespace, Service};
 use k8s_openapi::api::networking::v1::Ingress;
+use k8s_openapi::List;
 use wapc_guest as guest;
 
 pub trait Client {
@@ -35,46 +36,18 @@ impl Client for WapcClient {
 
 /// Fake client used when running unit tests. This should be used when writing
 /// code that doesn't target wasm32
-pub struct TestClient {
-    /// Mock list of ingresses that the waPC fake host will return.
-    pub mock_ingresses: Result<Vec<Ingress>>,
-
-    /// Mock list of namespaces that the waPC fake host will return.
-    pub mock_namespaces: Result<Vec<Namespace>>,
-
-    /// Mock list of services that the waPC fake host will return.
-    pub mock_services: Result<Vec<Service>>,
-}
-
-impl Default for TestClient {
-    fn default() -> Self {
-        TestClient {
-            mock_ingresses: Ok(vec![]),
-            mock_namespaces: Ok(vec![]),
-            mock_services: Ok(vec![]),
-        }
-    }
-}
+pub struct TestClient {}
 
 impl Client for TestClient {
     fn namespaces(&self) -> Result<Vec<u8>> {
-        match &self.mock_namespaces {
-            Ok(v) => Ok(serde_json::to_vec(&v).unwrap()),
-            Err(e) => Err(anyhow!("{}", e)),
-        }
+        Ok(serde_json::to_vec(&List::<Namespace>::default()).unwrap())
     }
 
     fn ingresses(&self) -> Result<Vec<u8>> {
-        match &self.mock_ingresses {
-            Ok(v) => Ok(serde_json::to_vec(&v).unwrap()),
-            Err(e) => Err(anyhow!("{}", e)),
-        }
+        Ok(serde_json::to_vec(&List::<Ingress>::default()).unwrap())
     }
 
     fn services(&self) -> Result<Vec<u8>> {
-        match &self.mock_services {
-            Ok(v) => Ok(serde_json::to_vec(&v).unwrap()),
-            Err(e) => Err(anyhow!("{}", e)),
-        }
+        Ok(serde_json::to_vec(&List::<Service>::default()).unwrap())
     }
 }
