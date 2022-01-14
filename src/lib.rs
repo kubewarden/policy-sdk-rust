@@ -5,6 +5,8 @@ use anyhow::anyhow;
 pub mod cluster_context;
 pub mod logging;
 pub mod metadata;
+#[cfg(not(target_arch = "wasm32"))]
+mod non_wasm;
 pub mod request;
 pub mod response;
 pub mod settings;
