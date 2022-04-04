@@ -1,11 +1,21 @@
 use anyhow::{anyhow, Result};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
+use url::Url;
 
 use crate::host_capabilities::CallbackRequestType;
 
-/// TODO: write docs
-pub fn verify_image(image: &str, config: Config) -> Result<bool> {
+type WapcVerifyFN = fn(&[u8]) -> Result<Vec<u8>>;
+
+pub fn verify_image(image: &str, config: LatestVerificationConfig) -> Result<bool> {
+    wapc_invoke_verify_image(image, config, wapc_invoke_verify)
+}
+
+fn wapc_invoke_verify_image(
+    image: &str,
+    config: LatestVerificationConfig,
+    wapc_verify_fn: WapcVerifyFN,
+) -> Result<bool> {
     let req = CallbackRequestType::SigstoreVerify {
         image: image.to_string(),
         config,
@@ -14,36 +24,42 @@ pub fn verify_image(image: &str, config: Config) -> Result<bool> {
     let msg = serde_json::to_vec(&req)
         .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
 
-    let response_raw = wapc_invoke_verify(&msg)?;
+    let response_raw = wapc_verify_fn(&msg)?;
 
-    let verified: bool = serde_json::from_slice(&response_raw)
-        .map_err(|e| anyhow!("Cannot decode verification response: {}", e))?;
+    let verified = *response_raw
+        .first()
+        .ok_or_else(|| anyhow!("error parsing the callback response"))?
+        != 0;
     Ok(verified)
 }
 
-#[cfg(target_arch = "wasm32")]
 fn wapc_invoke_verify(payload: &[u8]) -> Result<Vec<u8>> {
-    let response_raw = wapc_guest::host_call("kubewarden", "oci", "verify", &msg)
+    let response_raw = wapc_guest::host_call("kubewarden", "oci", "verify", payload)
         .map_err(|e| anyhow::anyhow!("erorr invoking wapc logging facility: {:?}", e))?;
-    response_raw.into()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn wapc_invoke_verify(_payload: &[u8]) -> Result<Vec<u8>> {
-    //TODO find a way to allow users to provide different results
-    //a global maybe?
-    Ok(br#"true"#.to_vec())
+    Ok(response_raw)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Request {
     pub image: String,
-    pub config: Config,
+    pub config: VerificationConfigV1,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+fn default_minimum_matches() -> u8 {
+    1
+}
+
+/// Alias to the type that is currently used to store the
+/// verification settings.
+///
+/// When a new version is created:
+/// * Update this stype to point to the new version
+/// * Implement `TryFrom` that goes from (v - 1) to (v)
+pub type LatestVerificationConfig = VerificationConfigV1;
+
+#[derive(Serialize, Default, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ConfigV1 {
+pub struct VerificationConfigV1 {
     pub all_of: Option<Vec<Signature>>,
     pub any_of: Option<AnyOf>,
 }
@@ -54,9 +70,9 @@ pub struct ConfigV1 {
 /// unknown value (e.g: 1000)
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "apiVersion", rename_all = "camelCase", deny_unknown_fields)]
-pub enum VersionedConfig {
+pub enum VersionedVerificationConfig {
     #[serde(rename = "v1")]
-    V1(ConfigV1),
+    V1(VerificationConfigV1),
     #[serde(other)]
     Unsupported,
 }
@@ -65,9 +81,9 @@ pub enum VersionedConfig {
 /// the verification config, and something which is "just wrong".
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Config {
-    Versioned(VersionedConfig),
-    Invalid(),
+pub enum VerificationConfig {
+    Versioned(VersionedVerificationConfig),
+    Invalid(serde_yaml::Value),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -76,10 +92,6 @@ pub struct AnyOf {
     #[serde(default = "default_minimum_matches")]
     pub minimum_matches: u8,
     pub signatures: Vec<Signature>,
-}
-
-fn default_minimum_matches() -> u8 {
-    1
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -106,61 +118,56 @@ pub enum Signature {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub enum Subject {
     Equal(String),
-    UrlPrefix(String),
+    #[serde(deserialize_with = "deserialize_subject_url_prefix")]
+    UrlPrefix(Url),
+}
+
+fn deserialize_subject_url_prefix<'de, D>(deserializer: D) -> Result<Url, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let mut url = Url::deserialize(deserializer)?;
+    if !url.path().ends_with('/') {
+        // sanitize url prefix path by postfixing `/`, to prevent
+        // `https://github.com/kubewarden` matching
+        // `https://github.com/kubewarden-malicious/`
+        url.set_path(format!("{}{}", url.path(), '/').as_str());
+    }
+    Ok(url)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    //TODO: write tests
+    fn wapc_invoke_verify_ok(_payload: &[u8]) -> Result<Vec<u8>> {
+        let is_trusted_byte: u8 = true.into();
+        let is_trusted_vec_byte = vec![is_trusted_byte];
 
-    // In this case, the settings of the policy defined by the user is going
-    // to embed the configuration object:
-    //
-    // ```yaml
-    // somethingUnrelated: hello world
-    // verificationConfig:
-    //   apiVersion: v1
-    //   allOf:
-    //     - kind: genericIssuer
-    //       issuer: https://token.actions.githubusercontent.com
-    //       subject:
-    //          urlPrefix: https://github.com/kubewarden # should deserialize path to kubewarden/
-    //     - kind: genericIssuer
-    //       issuer: https://yourdomain.com/oauth2
-    //       subject:
-    //          urlPrefix: https://github.com/kubewarden/ # should deserialize path to kubewarden/
-    //
-    // ```
-    #[derive(Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase", deny_unknown_fields)]
-    struct SettingsExample {
-        something_unrelated: String,
-        verification_config: Config,
+        Ok(is_trusted_vec_byte)
     }
 
-    // In this case, the settings of the policy defined by the user is going
-    // to use some primites of the SDK Verification::Config
-    //
-    // ```yaml
-    // somethingUnrelated: hello world
-    // verificationConfig:
-    //   allOf:
-    //     - kind: genericIssuer
-    //       issuer: https://token.actions.githubusercontent.com
-    //       subject:
-    //          urlPrefix: https://github.com/kubewarden # should deserialize path to kubewarden/
-    //     - kind: genericIssuer
-    //       issuer: https://yourdomain.com/oauth2
-    //       subject:
-    //          urlPrefix: https://github.com/kubewarden/ # should deserialize path to kubewarden/
-    //
-    // ```
-    #[derive(Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase", deny_unknown_fields)]
-    struct SettingsCustomExample {
-        something_unrelated: String,
-        verification_config: ConfigV1,
+    fn wapc_invoke_verify_err(_payload: &[u8]) -> Result<Vec<u8>> {
+        Err(anyhow!("error"))
+    }
+
+    #[test]
+    fn test_wapc_invoke_verify_ok() {
+        let config = VerificationConfigV1 {
+            all_of: None,
+            any_of: None,
+        };
+        let result = wapc_invoke_verify_image("test", config, wapc_invoke_verify_ok);
+        assert_eq!(result.unwrap(), true);
+    }
+
+    #[test]
+    fn test_wapc_invoke_verify_err() {
+        let config = VerificationConfigV1 {
+            all_of: None,
+            any_of: None,
+        };
+        let result = wapc_invoke_verify_image("test", config, wapc_invoke_verify_err);
+        assert_eq!(result.is_err(), true);
     }
 }
