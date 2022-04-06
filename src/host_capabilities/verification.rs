@@ -11,6 +11,9 @@ pub fn verify_image(image: &str, config: LatestVerificationConfig) -> Result<boo
     wapc_invoke_verify_image(image, config, wapc_invoke_verify)
 }
 
+// This function is needed to have an easier way to test the verification outcomes when doing
+// testing. Tests do NOT run inside of a Wasm environment, hence we can't call the actual waPC
+// functions.
 fn wapc_invoke_verify_image(
     image: &str,
     config: LatestVerificationConfig,
