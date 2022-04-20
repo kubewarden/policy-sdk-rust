@@ -1,10 +1,16 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+#[cfg(test)]
+use tests::mock_wapc as wapc_guest;
 
 use crate::host_capabilities::CallbackRequestType;
 
-type WapcVerifyFN = fn(&[u8]) -> Result<Vec<u8>>;
+#[derive(Serialize, Deserialize, Clone)]
+pub struct VerificationResponse {
+    pub is_trusted: bool,
+    pub digest: String,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct KeylessInfo {
@@ -16,78 +22,130 @@ pub fn verify_pub_keys_image(
     image: &str,
     pub_keys: Vec<String>,
     annotations: Option<HashMap<String, String>>,
-) -> Result<bool> {
-    invoke_verify_pub_keys_image(image, pub_keys, annotations, wapc_invoke_verify)
-}
-
-pub fn verify_keyless_exact_match(
-    image: &str,
-    keyless: Vec<KeylessInfo>,
-    annotations: Option<HashMap<String, String>>,
-) -> Result<bool> {
-    invoke_verify_keyless_exact_match(image, keyless, annotations, wapc_invoke_verify)
-}
-
-// This function is needed to have an easier way to test the verification outcomes when doing
-// testing. Tests do NOT run inside of a Wasm environment, hence we can't call the actual waPC
-// functions.
-fn invoke_verify_pub_keys_image(
-    image: &str,
-    pub_keys: Vec<String>,
-    annotations: Option<HashMap<String, String>>,
-    wapc_verify_fn: WapcVerifyFN,
-) -> Result<bool> {
+) -> Result<VerificationResponse> {
     let req = CallbackRequestType::SigstorePubKeyVerify {
         image: image.to_string(),
         pub_keys,
         annotations,
     };
 
-    let msg = serde_json::to_vec(&req)
-        .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
-
-    let response_raw = wapc_verify_fn(&msg)?;
-
-    //TODO this must be a json
-    let verified = *response_raw
-        .first()
-        .ok_or_else(|| anyhow!("error parsing the callback response"))?
-        != 0;
-    Ok(verified)
+    verify(req)
 }
 
-// This function is needed to have an easier way to test the verification outcomes when doing
-// testing. Tests do NOT run inside of a Wasm environment, hence we can't call the actual waPC
-// functions.
-fn invoke_verify_keyless_exact_match(
+pub fn verify_keyless_exact_match(
     image: &str,
     keyless: Vec<KeylessInfo>,
     annotations: Option<HashMap<String, String>>,
-    wapc_verify_fn: WapcVerifyFN,
-) -> Result<bool> {
+) -> Result<VerificationResponse> {
     let req = CallbackRequestType::SigstoreKeylessVerify {
         image: image.to_string(),
         keyless,
         annotations,
     };
 
+    verify(req)
+}
+
+fn verify(req: CallbackRequestType) -> Result<VerificationResponse> {
     let msg = serde_json::to_vec(&req)
         .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
-
-    let response_raw = wapc_verify_fn(&msg)?;
-
-    //TODO this must be a json
-    let verified = *response_raw
-        .first()
-        .ok_or_else(|| anyhow!("error parsing the callback response"))?
-        != 0;
-    Ok(verified)
-}
-
-fn wapc_invoke_verify(payload: &[u8]) -> Result<Vec<u8>> {
-    let response_raw = wapc_guest::host_call("kubewarden", "oci", "v1/verify", payload)
+    let response_raw = wapc_guest::host_call("kubewarden", "oci", "v1/verify", &msg)
         .map_err(|e| anyhow::anyhow!("error invoking wapc verify: {:?}", e))?;
-    Ok(response_raw)
+
+    let response: VerificationResponse = serde_json::from_slice(&response_raw)?;
+
+    Ok(response)
 }
 
-//TODO tests?
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mockall::automock;
+    use serial_test::serial;
+
+    #[automock()]
+    pub mod wapc {
+        use wapc_guest::CallResult;
+
+        // needed for creating mocks
+        #[allow(dead_code)]
+        pub fn host_call(_binding: &str, _ns: &str, _op: &str, _msg: &[u8]) -> CallResult {
+            Ok(vec![u8::from(true)])
+        }
+    }
+
+    // these tests need to run sequentially because mockall creates a global context to create the mocks
+    #[serial]
+    #[test]
+    fn verify_pub_keys_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect().times(1).returning(|_, _, _, _| {
+            Ok(serde_json::to_vec(&{
+                VerificationResponse {
+                    is_trusted: true,
+                    digest: "digest".to_string(),
+                }
+            })
+            .unwrap())
+        });
+        let res = verify_pub_keys_image("image", vec!["key".to_string()], None);
+
+        assert_eq!(res.unwrap().is_trusted, true)
+    }
+
+    #[serial]
+    #[test]
+    fn verify_pub_keys_not_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect()
+            .times(1)
+            .returning(|_, _, _, _| Err(Box::new(core::fmt::Error {})));
+        let res = verify_pub_keys_image("image", vec!["key".to_string()], None);
+
+        assert!(res.is_err())
+    }
+
+    #[serial]
+    #[test]
+    fn verify_keyless_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect().times(1).returning(|_, _, _, _| {
+            Ok(serde_json::to_vec(&{
+                VerificationResponse {
+                    is_trusted: true,
+                    digest: "digest".to_string(),
+                }
+            })
+            .unwrap())
+        });
+        let res = verify_keyless_exact_match(
+            "image",
+            vec![KeylessInfo {
+                subject: "subject".to_string(),
+                issuer: "issuer".to_string(),
+            }],
+            None,
+        );
+
+        assert_eq!(res.unwrap().is_trusted, true)
+    }
+
+    #[serial]
+    #[test]
+    fn verify_keyless_not_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect()
+            .times(1)
+            .returning(|_, _, _, _| Err(Box::new(core::fmt::Error {})));
+        let res = verify_keyless_exact_match(
+            "image",
+            vec![KeylessInfo {
+                subject: "subject".to_string(),
+                issuer: "issuer".to_string(),
+            }],
+            None,
+        );
+
+        assert!(res.is_err())
+    }
+}

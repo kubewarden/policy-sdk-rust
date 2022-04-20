@@ -25,3 +25,5 @@ url = { version = "2.2.2", features = ["serde"] }
 
 [dev-dependencies]
 assert-json-diff = "2.0.1"
+serial_test = "0.6.0"
+mockall = "0.11.0"
