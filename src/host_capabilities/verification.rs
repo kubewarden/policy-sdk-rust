@@ -6,18 +6,29 @@ use tests::mock_wapc as wapc_guest;
 
 use crate::host_capabilities::CallbackRequestType;
 
+/// VerificationResponse holds the response of a sigstore signatures verification
 #[derive(Serialize, Deserialize, Clone)]
 pub struct VerificationResponse {
+    /// true if the image is trusted, which means verification was successfull
     pub is_trusted: bool,
+    /// digest of the image that was verified
     pub digest: String,
 }
 
+/// KeylessInfo holds information about a keyless signature
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct KeylessInfo {
+    /// the issuer identifier
     pub issuer: String,
+    /// contains the information of the user used to authenticate against the OIDC provider
     pub subject: String,
 }
 
+/// verify sigstore signatures of an image using public keys
+/// # Arguments
+/// * `image` -  image to be verified
+/// * `pub_keys`  -  list of PEM encoded keys that must have been used to sign the OCI object
+/// * `annotations` - annotations that must have been provided by all signers when they signed the OCI artifact
 pub fn verify_pub_keys_image(
     image: &str,
     pub_keys: Vec<String>,
@@ -32,6 +43,11 @@ pub fn verify_pub_keys_image(
     verify(req)
 }
 
+/// verify sigstore signatures of an image using keyless
+/// # Arguments
+/// * `image` -  image to be verified
+/// * `keyless`  -  list of issuers and subjects
+/// * `annotations` - annotations that must have been provided by all signers when they signed the OCI artifact
 pub fn verify_keyless_exact_match(
     image: &str,
     keyless: Vec<KeylessInfo>,
