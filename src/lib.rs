@@ -3,6 +3,7 @@ extern crate k8s_openapi;
 use anyhow::anyhow;
 
 pub mod cluster_context;
+pub mod host_capabilities;
 pub mod logging;
 pub mod metadata;
 #[cfg(not(target_arch = "wasm32"))]
