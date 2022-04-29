@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod net;
+pub mod oci;
 pub mod verification;
 
 /// Describes the different kinds of request a waPC guest can make to
