@@ -66,7 +66,7 @@ fn verify(req: CallbackRequestType) -> Result<VerificationResponse> {
     let msg = serde_json::to_vec(&req)
         .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
     let response_raw = wapc_guest::host_call("kubewarden", "oci", "v1/verify", &msg)
-        .map_err(|e| anyhow::anyhow!("error invoking wapc verify: {:?}", e))?;
+        .map_err(|e| anyhow!("{}", e))?;
 
     let response: VerificationResponse = serde_json::from_slice(&response_raw)?;
 
