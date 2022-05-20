@@ -2,6 +2,8 @@ use crate::host_capabilities::verification::KeylessInfo;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub mod net;
+pub mod oci;
 pub mod verification;
 
 /// Describes the different kinds of request a waPC guest can make to
@@ -33,4 +35,6 @@ pub enum CallbackRequestType {
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
         annotations: Option<HashMap<String, String>>,
     },
+    /// Lookup the addresses for a given hostname via DNS
+    DNSLookupHost { host: String },
 }
