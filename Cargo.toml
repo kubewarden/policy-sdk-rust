@@ -41,5 +41,5 @@ wapc-guest = "1.0.0"
 [dev-dependencies]
 assert-json-diff = "2.0.1"
 mockall = "0.11.1"
-serial_test = "0.6.0"
+serial_test = "0.7.0"
 k8s-openapi = { version = "0.15.0", default-features = false, features = [ "v1_24" ]}
