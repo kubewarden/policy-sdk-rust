@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 
 use anyhow::anyhow;
 
@@ -26,6 +27,8 @@ pub fn accept_request() -> wapc_guest::CallResult {
         message: None,
         code: None,
         mutated_object: None,
+        audit_annotations: None,
+        warnings: None,
     })?)
 }
 
@@ -38,19 +41,30 @@ pub fn mutate_request(mutated_object: serde_json::Value) -> wapc_guest::CallResu
         message: None,
         code: None,
         mutated_object: Some(mutated_object),
+        audit_annotations: None,
+        warnings: None,
     })?)
 }
 
 /// Create a rejection response
 /// # Arguments
 /// * `message` -  message shown to the user
-/// * `code`    -  code shown to the user
-pub fn reject_request(message: Option<String>, code: Option<u16>) -> wapc_guest::CallResult {
+/// * `code` -  code shown to the user
+/// * `audit_annotations` - an unstructured key value map set by remote admission controller (e.g. error=image-blacklisted). MutatingAdmissionWebhook and ValidatingAdmissionWebhook admission controller will prefix the keys with admission webhook name (e.g. imagepolicy.example.com/error=image-blacklisted). AuditAnnotations will be provided by the admission webhook to add additional context to the audit log for this request.
+/// * `warnings` -  a list of warning messages to return to the requesting API client. Warning messages describe a problem the client making the API request should correct or be aware of. Limit warnings to 120 characters if possible. Warnings over 256 characters and large numbers of warnings may be truncated.
+pub fn reject_request(
+    message: Option<String>,
+    code: Option<u16>,
+    audit_annotations: Option<HashMap<String, String>>,
+    warnings: Option<Vec<String>>,
+) -> wapc_guest::CallResult {
     Ok(serde_json::to_vec(&ValidationResponse {
         accepted: false,
         mutated_object: None,
         message,
         code,
+        audit_annotations,
+        warnings,
     })?)
 }
 
@@ -174,6 +188,8 @@ mod tests {
         let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
 
         assert!(response.mutated_object.is_none());
+        assert!(response.audit_annotations.is_none());
+        assert!(response.warnings.is_none());
         Ok(())
     }
 
@@ -185,12 +201,28 @@ mod tests {
         let message = String::from("internal error");
         let expected_message = message.clone();
 
-        let reponse_raw = reject_request(Some(message), Some(code)).unwrap();
+        let warnings = vec![String::from("warning 1"), String::from("warning 2")];
+
+        let mut audit_annotations: HashMap<String, String> = HashMap::new();
+        audit_annotations.insert(
+            String::from("imagepolicy.example.com/error"),
+            String::from("image-blacklisted"),
+        );
+
+        let reponse_raw = reject_request(
+            Some(message),
+            Some(code),
+            Some(audit_annotations.clone()),
+            Some(warnings.clone()),
+        )
+        .unwrap();
         let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
 
         assert!(response.mutated_object.is_none());
         assert_eq!(response.code, Some(expected_code));
         assert_eq!(response.message, Some(expected_message));
+        assert_eq!(response.audit_annotations, Some(audit_annotations));
+        assert_eq!(response.warnings, Some(warnings));
         Ok(())
     }
 
