@@ -1,7 +1,7 @@
-extern crate k8s_openapi;
 
 use anyhow::anyhow;
 
+#[cfg(feature = "cluster-context")]
 pub mod cluster_context;
 pub mod host_capabilities;
 pub mod logging;
