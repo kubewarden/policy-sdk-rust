@@ -62,6 +62,29 @@ pub fn verify_keyless_exact_match(
     verify(req)
 }
 
+/// verify sigstore signatures of an image using keyless signatures made via
+/// Github Actions.
+/// # Arguments
+/// * `image` -  image to be verified
+/// * `owner` - owner of the repository. E.g: octocat
+/// * `repo` - Optional. repo of the GH Action workflow that signed the artifact. E.g: example-repo. Optional.
+/// * `annotations` - annotations that must have been provided by all signers when they signed the OCI artifact
+pub fn verify_keyless_github_actions(
+    image: &str,
+    owner: String,
+    repo: Option<String>,
+    annotations: Option<HashMap<String, String>>,
+) -> Result<VerificationResponse> {
+    let req = CallbackRequestType::SigstoreGithubActionsVerify {
+        image: image.to_string(),
+        owner,
+        repo,
+        annotations,
+    };
+
+    verify(req)
+}
+
 fn verify(req: CallbackRequestType) -> Result<VerificationResponse> {
     let msg = serde_json::to_vec(&req)
         .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;

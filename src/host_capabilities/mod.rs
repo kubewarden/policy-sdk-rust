@@ -35,6 +35,18 @@ pub enum CallbackRequestType {
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
         annotations: Option<HashMap<String, String>>,
     },
+
+    SigstoreGithubActionsVerify {
+        /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
+        image: String,
+        /// owner of the repository. E.g: octocat
+        owner: String,
+        /// Optonal - Repo of the GH Action workflow that signed the artifact. E.g: example-repo
+        repo: Option<String>,
+        /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
+        annotations: Option<HashMap<String, String>>,
+    },
+
     /// Lookup the addresses for a given hostname via DNS
     DNSLookupHost { host: String },
 }
