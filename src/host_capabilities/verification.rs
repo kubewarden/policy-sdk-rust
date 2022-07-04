@@ -210,6 +210,49 @@ mod tests {
         assert!(res.is_err())
     }
 
+    #[serial]
+    #[test]
+    fn verify_keyless_prefix_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect().times(1).returning(|_, _, _, _| {
+            Ok(serde_json::to_vec(&{
+                VerificationResponse {
+                    is_trusted: true,
+                    digest: "digest".to_string(),
+                }
+            })
+            .unwrap())
+        });
+        let res = verify_keyless_prefix_match(
+            "image",
+            vec![KeylessInfo {
+                subject: "subject".to_string(),
+                issuer: "issuer".to_string(),
+            }],
+            None,
+        );
+
+        assert_eq!(res.unwrap().is_trusted, true)
+    }
+
+    #[serial]
+    #[test]
+    fn verify_keyless_prefix_not_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect()
+            .times(1)
+            .returning(|_, _, _, _| Err(Box::new(core::fmt::Error {})));
+        let res = verify_keyless_prefix_match(
+            "image",
+            vec![KeylessInfo {
+                subject: "subject".to_string(),
+                issuer: "issuer".to_string(),
+            }],
+            None,
+        );
+
+        assert!(res.is_err())
+    }
 
     #[serial]
     #[test]
