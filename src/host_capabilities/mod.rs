@@ -36,6 +36,15 @@ pub enum CallbackRequestType {
         annotations: Option<HashMap<String, String>>,
     },
 
+    SigstoreKeylessPrefixVerify {
+        /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
+        image: String,
+        /// List of keyless signatures that must be found
+        keyless: Vec<KeylessInfo>,
+        /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
+        annotations: Option<HashMap<String, String>>,
+    },
+
     SigstoreGithubActionsVerify {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
