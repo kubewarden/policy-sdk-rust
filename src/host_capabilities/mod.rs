@@ -16,9 +16,10 @@ pub enum CallbackRequestType {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
     },
+
     /// Require the verification of the manifest digest of an OCI object (be
     /// it an image or anything else that can be stored into an OCI registry)
-    /// to be signed by Sigstore
+    /// to be signed by Sigstore, using public keys mode
     SigstorePubKeyVerify {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
@@ -27,6 +28,9 @@ pub enum CallbackRequestType {
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
         annotations: Option<HashMap<String, String>>,
     },
+
+    // Require the verification of the manifest digest of an OCI object to be
+    // signed by Sigstore, using keyless mode
     SigstoreKeylessVerify {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
@@ -36,6 +40,8 @@ pub enum CallbackRequestType {
         annotations: Option<HashMap<String, String>>,
     },
 
+    // Require the verification of the manifest digest of an OCI object to be
+    // signed by Sigstore using keyless mode and performed in GitHub Actions
     SigstoreKeylessPrefixVerify {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
@@ -45,6 +51,8 @@ pub enum CallbackRequestType {
         annotations: Option<HashMap<String, String>>,
     },
 
+    // Require the verification of the manifest digest of an OCI object to be
+    // signed by Sigstore using keyless mode and performed in GitHub Actions
     SigstoreGithubActionsVerify {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,

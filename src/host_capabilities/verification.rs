@@ -63,8 +63,8 @@ pub fn verify_keyless_exact_match(
 }
 
 /// verify sigstore signatures of an image using keyless. Here, the provided
-/// subject string is streated as a URL prefix, and sanitized to a valid URL on
-/// itself by appending `\` to prevent typosquatting. Then, the provided subject
+/// subject string is treated as a URL prefix, and sanitized to a valid URL on
+/// itself by appending `/` to prevent typosquatting. Then, the provided subject
 /// will satisfy the signature only if it is a prefix of the signature subject.
 /// # Arguments
 /// * `image` -  image to be verified
