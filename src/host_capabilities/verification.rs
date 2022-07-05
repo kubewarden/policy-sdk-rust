@@ -62,6 +62,51 @@ pub fn verify_keyless_exact_match(
     verify(req)
 }
 
+/// verify sigstore signatures of an image using keyless. Here, the provided
+/// subject string is streated as a URL prefix, and sanitized to a valid URL on
+/// itself by appending `\` to prevent typosquatting. Then, the provided subject
+/// will satisfy the signature only if it is a prefix of the signature subject.
+/// # Arguments
+/// * `image` -  image to be verified
+/// * `keyless`  -  list of issuers and subjects
+/// * `annotations` - annotations that must have been provided by all signers when they signed the OCI artifact
+pub fn verify_keyless_prefix_match(
+    image: &str,
+    keyless: Vec<KeylessInfo>,
+    annotations: Option<HashMap<String, String>>,
+) -> Result<VerificationResponse> {
+    let req = CallbackRequestType::SigstoreKeylessPrefixVerify {
+        image: image.to_string(),
+        keyless,
+        annotations,
+    };
+
+    verify(req)
+}
+
+/// verify sigstore signatures of an image using keyless signatures made via
+/// Github Actions.
+/// # Arguments
+/// * `image` -  image to be verified
+/// * `owner` - owner of the repository. E.g: octocat
+/// * `repo` - Optional. repo of the GH Action workflow that signed the artifact. E.g: example-repo. Optional.
+/// * `annotations` - annotations that must have been provided by all signers when they signed the OCI artifact
+pub fn verify_keyless_github_actions(
+    image: &str,
+    owner: String,
+    repo: Option<String>,
+    annotations: Option<HashMap<String, String>>,
+) -> Result<VerificationResponse> {
+    let req = CallbackRequestType::SigstoreGithubActionsVerify {
+        image: image.to_string(),
+        owner,
+        repo,
+        annotations,
+    };
+
+    verify(req)
+}
+
 fn verify(req: CallbackRequestType) -> Result<VerificationResponse> {
     let msg = serde_json::to_vec(&req)
         .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
@@ -161,6 +206,80 @@ mod tests {
             }],
             None,
         );
+
+        assert!(res.is_err())
+    }
+
+    #[serial]
+    #[test]
+    fn verify_keyless_prefix_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect().times(1).returning(|_, _, _, _| {
+            Ok(serde_json::to_vec(&{
+                VerificationResponse {
+                    is_trusted: true,
+                    digest: "digest".to_string(),
+                }
+            })
+            .unwrap())
+        });
+        let res = verify_keyless_prefix_match(
+            "image",
+            vec![KeylessInfo {
+                subject: "subject".to_string(),
+                issuer: "issuer".to_string(),
+            }],
+            None,
+        );
+
+        assert_eq!(res.unwrap().is_trusted, true)
+    }
+
+    #[serial]
+    #[test]
+    fn verify_keyless_prefix_not_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect()
+            .times(1)
+            .returning(|_, _, _, _| Err(Box::new(core::fmt::Error {})));
+        let res = verify_keyless_prefix_match(
+            "image",
+            vec![KeylessInfo {
+                subject: "subject".to_string(),
+                issuer: "issuer".to_string(),
+            }],
+            None,
+        );
+
+        assert!(res.is_err())
+    }
+
+    #[serial]
+    #[test]
+    fn verify_keyless_github_actions_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect().times(1).returning(|_, _, _, _| {
+            Ok(serde_json::to_vec(&{
+                VerificationResponse {
+                    is_trusted: true,
+                    digest: "digest".to_string(),
+                }
+            })
+            .unwrap())
+        });
+        let res = verify_keyless_github_actions("image", "owner".to_string(), None, None);
+
+        assert_eq!(res.unwrap().is_trusted, true)
+    }
+
+    #[serial]
+    #[test]
+    fn verify_keyless_github_actions_not_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect()
+            .times(1)
+            .returning(|_, _, _, _| Err(Box::new(core::fmt::Error {})));
+        let res = verify_keyless_github_actions("image", "owner".to_string(), None, None);
 
         assert!(res.is_err())
     }

@@ -35,6 +35,27 @@ pub enum CallbackRequestType {
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
         annotations: Option<HashMap<String, String>>,
     },
+
+    SigstoreKeylessPrefixVerify {
+        /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
+        image: String,
+        /// List of keyless signatures that must be found
+        keyless: Vec<KeylessInfo>,
+        /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
+        annotations: Option<HashMap<String, String>>,
+    },
+
+    SigstoreGithubActionsVerify {
+        /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
+        image: String,
+        /// owner of the repository. E.g: octocat
+        owner: String,
+        /// Optional - Repo of the GH Action workflow that signed the artifact. E.g: example-repo
+        repo: Option<String>,
+        /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
+        annotations: Option<HashMap<String, String>>,
+    },
+
     /// Lookup the addresses for a given hostname via DNS
     DNSLookupHost { host: String },
 }
