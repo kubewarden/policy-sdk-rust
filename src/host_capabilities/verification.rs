@@ -24,6 +24,17 @@ pub struct KeylessInfo {
     pub subject: String,
 }
 
+/// KeylessPrefixInfo holds information about a keyless signature
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct KeylessPrefixInfo {
+    /// the issuer identifier
+    pub issuer: String,
+    /// Valid prefix of the Subject field in the signature used to authenticate
+    /// against the OIDC provider. It forms a valid URL on its own, and will get
+    /// sanitized by appending `/` to protect against typosquatting
+    pub url_prefix: String,
+}
+
 /// verify sigstore signatures of an image using public keys
 /// # Arguments
 /// * `image` -  image to be verified
@@ -72,12 +83,12 @@ pub fn verify_keyless_exact_match(
 /// * `annotations` - annotations that must have been provided by all signers when they signed the OCI artifact
 pub fn verify_keyless_prefix_match(
     image: &str,
-    keyless: Vec<KeylessInfo>,
+    keyless_prefix: Vec<KeylessPrefixInfo>,
     annotations: Option<HashMap<String, String>>,
 ) -> Result<VerificationResponse> {
     let req = CallbackRequestType::SigstoreKeylessPrefixVerify {
         image: image.to_string(),
-        keyless,
+        keyless_prefix,
         annotations,
     };
 
@@ -225,8 +236,8 @@ mod tests {
         });
         let res = verify_keyless_prefix_match(
             "image",
-            vec![KeylessInfo {
-                subject: "subject".to_string(),
+            vec![KeylessPrefixInfo {
+                url_prefix: "urlprefix".to_string(),
                 issuer: "issuer".to_string(),
             }],
             None,
@@ -244,8 +255,8 @@ mod tests {
             .returning(|_, _, _, _| Err(Box::new(core::fmt::Error {})));
         let res = verify_keyless_prefix_match(
             "image",
-            vec![KeylessInfo {
-                subject: "subject".to_string(),
+            vec![KeylessPrefixInfo {
+                url_prefix: "urlprefix".to_string(),
                 issuer: "issuer".to_string(),
             }],
             None,

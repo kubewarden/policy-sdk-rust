@@ -1,4 +1,4 @@
-use crate::host_capabilities::verification::KeylessInfo;
+use crate::host_capabilities::verification::{KeylessInfo, KeylessPrefixInfo};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -47,7 +47,7 @@ pub enum CallbackRequestType {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
         /// List of keyless signatures that must be found
-        keyless: Vec<KeylessInfo>,
+        keyless_prefix: Vec<KeylessPrefixInfo>,
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
         annotations: Option<HashMap<String, String>>,
     },
