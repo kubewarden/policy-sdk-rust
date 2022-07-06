@@ -14,11 +14,13 @@ pub enum ProtocolVersion {
     Unknown = 0,
     #[serde(rename = "v1")]
     V1,
+    #[serde(rename = "v2")]
+    V2,
 }
 
 impl Default for ProtocolVersion {
     fn default() -> Self {
-        Self::V1
+        Self::V2
     }
 }
 
@@ -45,6 +47,9 @@ mod tests {
 
     #[test]
     fn protocol_version_try_display() {
+        let version = ProtocolVersion::V2;
+        assert_eq!("2", format!("{}", version));
+
         let version = ProtocolVersion::V1;
         assert_eq!("1", format!("{}", version));
 
@@ -57,6 +62,10 @@ mod tests {
         let version = ProtocolVersion::try_from(b"\"v1\"".to_vec());
         assert!(version.is_ok());
         assert_eq!(version.unwrap(), ProtocolVersion::V1);
+
+        let version = ProtocolVersion::try_from(b"\"v2\"".to_vec());
+        assert!(version.is_ok());
+        assert_eq!(version.unwrap(), ProtocolVersion::V2);
     }
 
     #[test]

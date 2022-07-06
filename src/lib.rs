@@ -231,7 +231,7 @@ mod tests {
         let reponse = protocol_version_guest(&[0; 0]).unwrap();
         let version: ProtocolVersion = serde_json::from_slice(&reponse).unwrap();
 
-        assert_eq!(version, ProtocolVersion::V1);
+        assert_eq!(version, ProtocolVersion::V2);
         Ok(())
     }
 }
