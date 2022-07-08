@@ -35,6 +35,16 @@ pub struct KeylessPrefixInfo {
     pub url_prefix: String,
 }
 
+/// KeylessGithubActionsInfo holds information about a keyless signature
+/// performed in GitHub Actions
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct KeylessGithubActionsInfo {
+    /// owner of the repository. E.g: octocat
+    owner: String,
+    /// Optional - repo of the GH Action workflow that signed the artifact. E.g: example-repo
+    repo: Option<String>,
+}
+
 /// verify sigstore signatures of an image using public keys
 /// # Arguments
 /// * `image` -  image to be verified
@@ -99,19 +109,16 @@ pub fn verify_keyless_prefix_match(
 /// Github Actions.
 /// # Arguments
 /// * `image` -  image to be verified
-/// * `owner` - owner of the repository. E.g: octocat
-/// * `repo` - Optional. repo of the GH Action workflow that signed the artifact. E.g: example-repo. Optional.
+/// * `github_actions` - list of GitHub owners and repos
 /// * `annotations` - annotations that must have been provided by all signers when they signed the OCI artifact
 pub fn verify_keyless_github_actions(
     image: &str,
-    owner: String,
-    repo: Option<String>,
+    github_actions: Vec<KeylessGithubActionsInfo>,
     annotations: Option<HashMap<String, String>>,
 ) -> Result<VerificationResponse> {
     let req = CallbackRequestType::SigstoreGithubActionsVerify {
         image: image.to_string(),
-        owner,
-        repo,
+        github_actions,
         annotations,
     };
 
@@ -278,7 +285,14 @@ mod tests {
             })
             .unwrap())
         });
-        let res = verify_keyless_github_actions("image", "owner".to_string(), None, None);
+        let res = verify_keyless_github_actions(
+            "image",
+            vec![KeylessGithubActionsInfo {
+                owner: "owner".to_string(),
+                repo: Some("repo".to_string()),
+            }],
+            None,
+        );
 
         assert_eq!(res.unwrap().is_trusted, true)
     }
@@ -290,7 +304,14 @@ mod tests {
         ctx.expect()
             .times(1)
             .returning(|_, _, _, _| Err(Box::new(core::fmt::Error {})));
-        let res = verify_keyless_github_actions("image", "owner".to_string(), None, None);
+        let res = verify_keyless_github_actions(
+            "image",
+            vec![KeylessGithubActionsInfo {
+                owner: "owner".to_string(),
+                repo: Some("repo".to_string()),
+            }],
+            None,
+        );
 
         assert!(res.is_err())
     }

@@ -1,4 +1,6 @@
-use crate::host_capabilities::verification::{KeylessInfo, KeylessPrefixInfo};
+use crate::host_capabilities::verification::{
+    KeylessGithubActionsInfo, KeylessInfo, KeylessPrefixInfo,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -57,10 +59,8 @@ pub enum CallbackRequestType {
     SigstoreGithubActionsVerify {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
-        /// owner of the repository. E.g: octocat
-        owner: String,
-        /// Optional - Repo of the GH Action workflow that signed the artifact. E.g: example-repo
-        repo: Option<String>,
+        /// List of keyless signatures performed in GitHub Actions that must be found
+        github_actions: Vec<KeylessGithubActionsInfo>,
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
         annotations: Option<HashMap<String, String>>,
     },
