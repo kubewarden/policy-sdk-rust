@@ -6,6 +6,7 @@ pub mod net;
 pub mod oci;
 pub mod verification;
 
+/// SigstoreVerificationInputV1 is used for the v1/verify callback
 #[derive(Serialize, Deserialize, Debug)]
 pub enum SigstoreVerificationInputV1 {
     /// Require the verification of the manifest digest of an OCI object (be
@@ -32,6 +33,8 @@ pub enum SigstoreVerificationInputV1 {
     },
 }
 
+/// SigstoreVerificationInputV2 is used for the v2/verify callback
+/// From now on we use serde internally tagged.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum SigstoreVerificationInputV2 {
