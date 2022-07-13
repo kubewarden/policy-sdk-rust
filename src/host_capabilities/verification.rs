@@ -1,10 +1,9 @@
+use crate::host_capabilities::SigstoreVerificationInputV2;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 #[cfg(test)]
 use tests::mock_wapc as wapc_guest;
-
-use crate::host_capabilities::CallbackRequestType;
 
 /// VerificationResponse holds the response of a sigstore signatures verification
 #[derive(Serialize, Deserialize, Clone)]
@@ -45,13 +44,13 @@ pub fn verify_pub_keys_image(
     pub_keys: Vec<String>,
     annotations: Option<HashMap<String, String>>,
 ) -> Result<VerificationResponse> {
-    let req = CallbackRequestType::SigstorePubKeyVerify {
+    let input = SigstoreVerificationInputV2::SigstorePubKeyVerify {
         image: image.to_string(),
         pub_keys,
         annotations,
     };
 
-    verify(req)
+    verify(input)
 }
 
 /// verify sigstore signatures of an image using keyless
@@ -64,13 +63,13 @@ pub fn verify_keyless_exact_match(
     keyless: Vec<KeylessInfo>,
     annotations: Option<HashMap<String, String>>,
 ) -> Result<VerificationResponse> {
-    let req = CallbackRequestType::SigstoreKeylessVerify {
+    let input = SigstoreVerificationInputV2::SigstoreKeylessVerify {
         image: image.to_string(),
         keyless,
         annotations,
     };
 
-    verify(req)
+    verify(input)
 }
 
 /// verify sigstore signatures of an image using keyless. Here, the provided
@@ -86,13 +85,13 @@ pub fn verify_keyless_prefix_match(
     keyless_prefix: Vec<KeylessPrefixInfo>,
     annotations: Option<HashMap<String, String>>,
 ) -> Result<VerificationResponse> {
-    let req = CallbackRequestType::SigstoreKeylessPrefixVerify {
+    let input = SigstoreVerificationInputV2::SigstoreKeylessPrefixVerify {
         image: image.to_string(),
         keyless_prefix,
         annotations,
     };
 
-    verify(req)
+    verify(input)
 }
 
 /// verify sigstore signatures of an image using keyless signatures made via
@@ -108,20 +107,20 @@ pub fn verify_keyless_github_actions(
     repo: Option<String>,
     annotations: Option<HashMap<String, String>>,
 ) -> Result<VerificationResponse> {
-    let req = CallbackRequestType::SigstoreGithubActionsVerify {
+    let input = SigstoreVerificationInputV2::SigstoreGithubActionsVerify {
         image: image.to_string(),
         owner,
         repo,
         annotations,
     };
 
-    verify(req)
+    verify(input)
 }
 
-fn verify(req: CallbackRequestType) -> Result<VerificationResponse> {
-    let msg = serde_json::to_vec(&req)
+fn verify(input: SigstoreVerificationInputV2) -> Result<VerificationResponse> {
+    let msg = serde_json::to_vec(&input)
         .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
-    let response_raw = wapc_guest::host_call("kubewarden", "oci", "v1/verify", &msg)
+    let response_raw = wapc_guest::host_call("kubewarden", "oci", "v2/verify", &msg)
         .map_err(|e| anyhow!("{}", e))?;
 
     let response: VerificationResponse = serde_json::from_slice(&response_raw)?;
