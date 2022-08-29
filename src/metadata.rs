@@ -7,7 +7,7 @@ use std::{convert::TryFrom, fmt};
 ///
 /// Policies built with this SDK provide the right value via the `protocol_version_guest`
 /// function.
-#[derive(Deserialize, Serialize, Debug, Clone, FromPrimitive, ToPrimitive, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, FromPrimitive, ToPrimitive, PartialEq, Eq)]
 pub enum ProtocolVersion {
     /// This is an invalid version
     #[serde(rename = "Unknown")]

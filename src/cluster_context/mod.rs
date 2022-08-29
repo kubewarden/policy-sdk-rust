@@ -79,7 +79,7 @@ impl Default for ClusterContext {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum NamespaceFilter {
     AllNamespaces,
     Namespace(String),
