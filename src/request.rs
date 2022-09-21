@@ -2,6 +2,11 @@ use anyhow::anyhow;
 use serde::{de::DeserializeOwned, Deserialize};
 use std::collections::{HashMap, HashSet};
 
+use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, ReplicaSet, StatefulSet};
+use k8s_openapi::api::batch::v1::{CronJob, Job};
+use k8s_openapi::api::core::v1::{Pod, PodSpec, ReplicationController};
+use k8s_openapi::Resource;
+
 /// ValidationRequest holds the data provided to the policy at evaluation time
 #[derive(Deserialize, Debug, Clone)]
 pub struct ValidationRequest<T: Default> {
@@ -151,5 +156,288 @@ where
                 e
             )
         })
+    }
+
+    /// Extract PodSpec from high level objects. This method can be used to evaluate high level objects instead of just Pods.
+    /// For example, it can be used to reject Deployments or StatefulSets that violate a policy instead of the Pods created by them.
+    /// Objects supported are: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod
+    /// It returns an error if the object is not one of those. If it is a supported object it returns the PodSpec if present, otherwise returns None.
+    pub fn extract_pod_spec_from_object(&self) -> anyhow::Result<Option<PodSpec>> {
+        match self.request.kind.kind.as_str() {
+            Deployment::KIND => {
+                let deployment = serde_json::from_value::<Deployment>(self.request.object.clone())?;
+                Ok(deployment.spec.and_then(|spec| spec.template.spec))
+            },
+            ReplicaSet::KIND => {
+                let replicaset = serde_json::from_value::<ReplicaSet>(self.request.object.clone())?;
+                Ok(replicaset.spec.and_then(|spec| spec.template.and_then(|template| template.spec)))
+            },
+            StatefulSet::KIND => {
+                let statefulset = serde_json::from_value::<StatefulSet>(self.request.object.clone())?;
+                Ok(statefulset.spec.and_then(|spec| spec.template.spec))
+            },
+            DaemonSet::KIND => {
+                let daemonset = serde_json::from_value::<DaemonSet>(self.request.object.clone())?;
+                Ok(daemonset.spec.and_then(|spec| spec.template.spec))
+            },
+            ReplicationController::KIND => {
+                let replication_controller = serde_json::from_value::<ReplicationController>(self.request.object.clone())?;
+                Ok(replication_controller.spec.and_then(|spec| spec.template.and_then(|template| template.spec)))
+            },
+            CronJob::KIND => {
+                let cronjob = serde_json::from_value::<CronJob>(self.request.object.clone())?;
+                Ok(cronjob.spec.and_then(|spec| spec.job_template.spec.and_then(|spec| spec.template.spec)))
+            },
+            Job::KIND => {
+                let job = serde_json::from_value::<Job>(self.request.object.clone())?;
+                Ok(job.spec.and_then(|spec| spec.template.spec))
+            },
+            Pod::KIND => {
+                let pod = serde_json::from_value::<Pod>(self.request.object.clone())?;
+                Ok(pod.spec)
+            },
+            _ => {
+                Err(anyhow!("Object should be one of these kinds: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod"))
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use k8s_openapi::api::apps::v1::{
+        DaemonSetSpec, DeploymentSpec, ReplicaSetSpec, StatefulSetSpec,
+    };
+    use k8s_openapi::api::batch::v1::{CronJobSpec, JobSpec, JobTemplateSpec};
+    use k8s_openapi::api::core::v1::{ConfigMap, PodTemplateSpec};
+
+    use serde::Serialize;
+
+    #[test]
+    fn test_extract_pod_spec_from_deployment() {
+        let pod_spec = PodSpec {
+            ..Default::default()
+        };
+        let deployment = Deployment {
+            spec: Some(DeploymentSpec {
+                template: PodTemplateSpec {
+                    spec: Some(pod_spec.clone()),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(deployment, "Deployment");
+
+        assert_eq!(
+            validation_request.extract_pod_spec_from_object().unwrap(),
+            Some(pod_spec)
+        )
+    }
+
+    #[test]
+    fn test_extract_pod_spec_from_deployment_without_pod_spec() {
+        let deployment = Deployment {
+            spec: Some(DeploymentSpec {
+                template: PodTemplateSpec {
+                    spec: None,
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(deployment, "Deployment");
+
+        assert_eq!(
+            validation_request.extract_pod_spec_from_object().unwrap(),
+            None
+        )
+    }
+
+    #[test]
+    fn test_extract_pod_spec_from_deployment_without_deployment_spec() {
+        let deployment = Deployment {
+            spec: None,
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(deployment, "Deployment");
+
+        assert_eq!(
+            validation_request.extract_pod_spec_from_object().unwrap(),
+            None
+        )
+    }
+
+    #[test]
+    fn test_extract_pod_spec_from_replicaset() {
+        let pod_spec = PodSpec {
+            ..Default::default()
+        };
+        let replicaset = ReplicaSet {
+            spec: Some(ReplicaSetSpec {
+                template: Some(PodTemplateSpec {
+                    spec: Some(pod_spec.clone()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(replicaset, "ReplicaSet");
+
+        assert_eq!(
+            validation_request.extract_pod_spec_from_object().unwrap(),
+            Some(pod_spec)
+        )
+    }
+
+    #[test]
+    fn test_extract_pod_spec_from_cronjob() {
+        let pod_spec = PodSpec {
+            ..Default::default()
+        };
+        let cronjob = CronJob {
+            spec: Some(CronJobSpec {
+                job_template: JobTemplateSpec {
+                    spec: Some(JobSpec {
+                        template: PodTemplateSpec {
+                            spec: Some(pod_spec.clone()),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(cronjob, "CronJob");
+
+        assert_eq!(
+            validation_request.extract_pod_spec_from_object().unwrap(),
+            Some(pod_spec)
+        )
+    }
+
+    #[test]
+    fn test_extract_pod_spec_from_job() {
+        let pod_spec = PodSpec {
+            ..Default::default()
+        };
+        let job = Job {
+            spec: Some(JobSpec {
+                template: PodTemplateSpec {
+                    spec: Some(pod_spec.clone()),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(job, "Job");
+
+        assert_eq!(
+            validation_request.extract_pod_spec_from_object().unwrap(),
+            Some(pod_spec)
+        )
+    }
+
+    #[test]
+    fn test_extract_pod_spec_from_pod() {
+        let pod_spec = PodSpec {
+            ..Default::default()
+        };
+        let pod = Pod {
+            spec: Some(pod_spec.clone()),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(pod, "Pod");
+
+        assert_eq!(
+            validation_request.extract_pod_spec_from_object().unwrap(),
+            Some(pod_spec)
+        )
+    }
+
+    #[test]
+    fn test_extract_pod_spec_from_object_statefulset() {
+        let pod_spec = PodSpec {
+            ..Default::default()
+        };
+        let statefulset = StatefulSet {
+            spec: Some(StatefulSetSpec {
+                template: PodTemplateSpec {
+                    spec: Some(pod_spec.clone()),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(statefulset, "StatefulSet");
+
+        assert_eq!(
+            validation_request.extract_pod_spec_from_object().unwrap(),
+            Some(pod_spec)
+        )
+    }
+
+    #[test]
+    fn test_extract_pod_spec_from_object_daemonset() {
+        let pod_spec = PodSpec {
+            ..Default::default()
+        };
+        let daemonset = DaemonSet {
+            spec: Some(DaemonSetSpec {
+                template: PodTemplateSpec {
+                    spec: Some(pod_spec.clone()),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(daemonset, "DaemonSet");
+
+        assert_eq!(
+            validation_request.extract_pod_spec_from_object().unwrap(),
+            Some(pod_spec)
+        )
+    }
+
+    #[test]
+    fn test_extract_pod_spec_from_object_not_supported() {
+        let configmap = ConfigMap {
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(configmap, "ConfigMap");
+
+        assert!(validation_request.extract_pod_spec_from_object().is_err())
+    }
+
+    #[test]
+    fn test_extract_pod_spec_from_object_invalid() {
+        let validation_request = create_validation_request("invalid", "Pod");
+
+        assert!(validation_request.extract_pod_spec_from_object().is_err())
+    }
+
+    fn create_validation_request<T: Serialize>(object: T, kind: &str) -> ValidationRequest<()> {
+        let value = serde_json::to_value(object).unwrap();
+        ValidationRequest {
+            settings: (),
+            request: KubernetesAdmissionRequest {
+                kind: GroupVersionKind {
+                    kind: kind.to_string(),
+                    ..Default::default()
+                },
+                object: value,
+                ..Default::default()
+            },
+        }
     }
 }
