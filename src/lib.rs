@@ -18,7 +18,13 @@ pub mod settings;
 pub mod test;
 
 use crate::metadata::ProtocolVersion;
+use crate::request::ValidationRequest;
 use crate::response::*;
+
+use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, ReplicaSet, StatefulSet};
+use k8s_openapi::api::batch::v1::{CronJob, Job};
+use k8s_openapi::api::core::v1::{Pod, PodSpec, ReplicationController};
+use k8s_openapi::Resource;
 
 /// Create an acceptance response
 pub fn accept_request() -> wapc_guest::CallResult {
@@ -44,6 +50,93 @@ pub fn mutate_request(mutated_object: serde_json::Value) -> wapc_guest::CallResu
         audit_annotations: None,
         warnings: None,
     })?)
+}
+
+/// Update the pod sec from the resource defined in the original object
+/// and create an acceptance response.
+/// # Arguments
+/// * `validation_request` - the original admission request
+/// * `pod_spec` - new PodSpec to be set in the response
+pub fn mutate_pod_spec_from_request<T: std::default::Default>(
+    validation_request: ValidationRequest<T>,
+    pod_spec: PodSpec,
+) -> wapc_guest::CallResult {
+    match validation_request.request.kind.kind.as_str() {
+        Deployment::KIND => {
+            let mut deployment =
+                serde_json::from_value::<Deployment>(validation_request.request.object.clone())?;
+            let mut deployment_spec = deployment.spec.unwrap_or_default();
+            deployment_spec.template.spec = Some(pod_spec);
+            deployment.spec = Some(deployment_spec);
+            mutate_request(serde_json::to_value(deployment)?)
+        }
+        ReplicaSet::KIND => {
+            let mut replicaset =
+                serde_json::from_value::<ReplicaSet>(validation_request.request.object.clone())?;
+            let mut replicaset_spec = replicaset.spec.unwrap_or_default();
+            let mut template = replicaset_spec.template.unwrap_or_default();
+            template.spec = Some(pod_spec);
+            replicaset_spec.template = Some(template);
+            replicaset.spec = Some(replicaset_spec);
+            mutate_request(serde_json::to_value(replicaset)?)
+        }
+        StatefulSet::KIND => {
+            let mut statefulset =
+                serde_json::from_value::<StatefulSet>(validation_request.request.object.clone())?;
+            let mut statefulset_spec = statefulset.spec.unwrap_or_default();
+            statefulset_spec.template.spec = Some(pod_spec);
+            statefulset.spec = Some(statefulset_spec);
+            mutate_request(serde_json::to_value(statefulset)?)
+        }
+        DaemonSet::KIND => {
+            let mut daemonset =
+                serde_json::from_value::<DaemonSet>(validation_request.request.object.clone())?;
+            let mut daemonset_spec = daemonset.spec.unwrap_or_default();
+            daemonset_spec.template.spec = Some(pod_spec);
+            daemonset.spec = Some(daemonset_spec);
+            mutate_request(serde_json::to_value(daemonset)?)
+        }
+        ReplicationController::KIND => {
+            let mut replication_controller = serde_json::from_value::<ReplicationController>(
+                validation_request.request.object.clone(),
+            )?;
+            let mut replication_controller_spec = replication_controller.spec.unwrap_or_default();
+            let mut template = replication_controller_spec.template.unwrap_or_default();
+            template.spec = Some(pod_spec);
+            replication_controller_spec.template = Some(template);
+            replication_controller.spec = Some(replication_controller_spec);
+            mutate_request(serde_json::to_value(replication_controller)?)
+        }
+        CronJob::KIND => {
+            let mut cronjob =
+                serde_json::from_value::<CronJob>(validation_request.request.object.clone())?;
+            let mut cronjob_spec = cronjob.spec.unwrap_or_default();
+            let mut job_template_spec = cronjob_spec.job_template;
+            let mut job_spec = job_template_spec.spec.unwrap_or_default();
+            let mut pod_template_spec = job_spec.template;
+            pod_template_spec.spec = Some(pod_spec);
+            job_spec.template = pod_template_spec;
+            job_template_spec.spec = Some(job_spec);
+            cronjob_spec.job_template = job_template_spec;
+            cronjob.spec = Some(cronjob_spec);
+            mutate_request(serde_json::to_value(cronjob)?)
+        }
+        Job::KIND => {
+            let mut job = serde_json::from_value::<Job>(validation_request.request.object.clone())?;
+            let mut job_spec = job.spec.unwrap_or_default();
+            job_spec.template.spec = Some(pod_spec);
+            job.spec = Some(job_spec);
+            mutate_request(serde_json::to_value(job)?)
+        }
+        Pod::KIND => {
+            let mut pod = serde_json::from_value::<Pod>(validation_request.request.object.clone())?;
+            pod.spec = Some(pod_spec);
+            mutate_request(serde_json::to_value(pod)?)
+        }
+        _ => {
+            reject_request(Some("Object should be one of these kinds: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod".to_string()), None, None, None)
+        }
+    }
 }
 
 /// Create a rejection response
@@ -146,7 +239,18 @@ pub fn protocol_version_guest(_payload: &[u8]) -> wapc_guest::CallResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::request::{GroupVersionKind, KubernetesAdmissionRequest};
     use assert_json_diff::assert_json_eq;
+    use jsonpath_lib as jsonpath;
+    use k8s_openapi::api::apps::v1::{
+        DaemonSet, DaemonSetSpec, Deployment, DeploymentSpec, ReplicaSet, ReplicaSetSpec,
+        StatefulSet, StatefulSetSpec,
+    };
+    use k8s_openapi::api::batch::v1::{CronJob, CronJobSpec, JobSpec, JobTemplateSpec};
+    use k8s_openapi::api::core::v1::PodTemplateSpec;
+    use k8s_openapi::api::core::v1::{ReplicationController, ReplicationControllerSpec};
+    use serde::ser::StdError;
+    use serde::Serialize;
     use serde_json::json;
 
     #[test]
@@ -232,6 +336,315 @@ mod tests {
         let version: ProtocolVersion = serde_json::from_slice(&reponse).unwrap();
 
         assert_eq!(version, ProtocolVersion::V1);
+        Ok(())
+    }
+
+    fn create_validation_request<T: Serialize>(object: T, kind: &str) -> ValidationRequest<()> {
+        let value = serde_json::to_value(object).unwrap();
+        ValidationRequest {
+            settings: (),
+            request: KubernetesAdmissionRequest {
+                kind: GroupVersionKind {
+                    kind: kind.to_string(),
+                    ..Default::default()
+                },
+                object: value,
+                ..Default::default()
+            },
+        }
+    }
+
+    fn check_if_automount_service_account_token_is_true(
+        raw_response: Result<Vec<u8>, Box<dyn StdError + Send + Sync>>,
+    ) -> Result<(), ()> {
+        assert!(raw_response.is_ok());
+        let response: ValidationResponse = serde_json::from_slice(&raw_response.unwrap()).unwrap();
+        assert!(response.accepted);
+
+        assert!(
+            response.mutated_object.is_some(),
+            "Request should be mutated"
+        );
+        let automount_service_account_token = jsonpath::select(
+            response.mutated_object.as_ref().unwrap(),
+            "$.spec.template.spec.automountServiceAccountToken",
+        )
+        .unwrap();
+        assert_eq!(
+            automount_service_account_token,
+            vec![true],
+            "Request not mutated"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_mutate_pod_spec_from_request_with_deployment() -> Result<(), ()> {
+        let deployment = Deployment {
+            spec: Some(DeploymentSpec {
+                template: PodTemplateSpec {
+                    spec: Some(PodSpec {
+                        automount_service_account_token: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(deployment, "Deployment");
+
+        let new_pod_spec = PodSpec {
+            automount_service_account_token: Some(true),
+            ..Default::default()
+        };
+
+        let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
+        check_if_automount_service_account_token_is_true(raw_response)
+    }
+
+    #[test]
+    fn test_mutate_pod_spec_from_request_with_replicaset() -> Result<(), ()> {
+        let replicaset = ReplicaSet {
+            spec: Some(ReplicaSetSpec {
+                template: Some(PodTemplateSpec {
+                    spec: Some(PodSpec {
+                        automount_service_account_token: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(replicaset, "ReplicaSet");
+
+        let new_pod_spec = PodSpec {
+            automount_service_account_token: Some(true),
+            ..Default::default()
+        };
+
+        let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
+        check_if_automount_service_account_token_is_true(raw_response)
+    }
+
+    #[test]
+    fn test_mutate_pod_spec_from_request_with_statefulset() -> Result<(), ()> {
+        let statefulset = StatefulSet {
+            spec: Some(StatefulSetSpec {
+                template: PodTemplateSpec {
+                    spec: Some(PodSpec {
+                        automount_service_account_token: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(statefulset, "StatefulSet");
+
+        let new_pod_spec = PodSpec {
+            automount_service_account_token: Some(true),
+            ..Default::default()
+        };
+        let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
+        check_if_automount_service_account_token_is_true(raw_response)
+    }
+
+    #[test]
+    fn test_mutate_pod_spec_from_request_with_daemonset() -> Result<(), ()> {
+        let daemonset = DaemonSet {
+            spec: Some(DaemonSetSpec {
+                template: PodTemplateSpec {
+                    spec: Some(PodSpec {
+                        automount_service_account_token: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(daemonset, "DaemonSet");
+
+        let new_pod_spec = PodSpec {
+            automount_service_account_token: Some(true),
+            ..Default::default()
+        };
+        let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
+        check_if_automount_service_account_token_is_true(raw_response)
+    }
+
+    #[test]
+    fn test_mutate_pod_spec_from_request_with_replicationcontroller() -> Result<(), ()> {
+        let replicationcontroller = ReplicationController {
+            spec: Some(ReplicationControllerSpec {
+                template: Some(PodTemplateSpec {
+                    spec: Some(PodSpec {
+                        automount_service_account_token: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request =
+            create_validation_request(replicationcontroller, "ReplicationController");
+
+        let new_pod_spec = PodSpec {
+            automount_service_account_token: Some(true),
+            ..Default::default()
+        };
+        let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
+        check_if_automount_service_account_token_is_true(raw_response)
+    }
+
+    #[test]
+    fn test_mutate_pod_spec_from_request_with_cronjob() -> Result<(), ()> {
+        let cronjob = CronJob {
+            spec: Some(CronJobSpec {
+                job_template: JobTemplateSpec {
+                    spec: Some(JobSpec {
+                        template: PodTemplateSpec {
+                            spec: Some(PodSpec {
+                                automount_service_account_token: Some(false),
+                                ..Default::default()
+                            }),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(cronjob, "CronJob");
+
+        let new_pod_spec = PodSpec {
+            automount_service_account_token: Some(true),
+            ..Default::default()
+        };
+
+        let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
+        assert!(raw_response.is_ok());
+        let response: ValidationResponse = serde_json::from_slice(&raw_response.unwrap()).unwrap();
+        assert!(response.accepted);
+
+        assert!(
+            response.mutated_object.is_some(),
+            "Request should be mutated"
+        );
+        let automount_service_account_token = jsonpath::select(
+            response.mutated_object.as_ref().unwrap(),
+            "$.spec.jobTemplate.spec.template.spec.automountServiceAccountToken",
+        )
+        .unwrap();
+        assert_eq!(
+            automount_service_account_token,
+            vec![true],
+            "Request not mutated"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_mutate_pod_spec_from_request_with_job() -> Result<(), ()> {
+        let job = Job {
+            spec: Some(JobSpec {
+                template: PodTemplateSpec {
+                    spec: Some(PodSpec {
+                        automount_service_account_token: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(job, "Job");
+
+        let new_pod_spec = PodSpec {
+            automount_service_account_token: Some(true),
+            ..Default::default()
+        };
+        let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
+        check_if_automount_service_account_token_is_true(raw_response)
+    }
+
+    #[test]
+    fn test_mutate_pod_spec_from_request_with_pod() -> Result<(), ()> {
+        let pod = Pod {
+            spec: Some(PodSpec {
+                automount_service_account_token: Some(false),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(pod, "Pod");
+
+        let new_pod_spec = PodSpec {
+            automount_service_account_token: Some(true),
+            ..Default::default()
+        };
+
+        let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
+        assert!(raw_response.is_ok());
+        let response: ValidationResponse = serde_json::from_slice(&raw_response.unwrap()).unwrap();
+        assert!(response.accepted);
+
+        assert!(
+            response.mutated_object.is_some(),
+            "Request should be mutated"
+        );
+        let automount_service_account_token = jsonpath::select(
+            response.mutated_object.as_ref().unwrap(),
+            "$.spec.automountServiceAccountToken",
+        )
+        .unwrap();
+        assert_eq!(
+            automount_service_account_token,
+            vec![true],
+            "Request not mutated"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_mutate_pod_spec_from_request_with_invalid_resource_type() -> Result<(), ()> {
+        let pod = Pod {
+            spec: Some(PodSpec {
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request = create_validation_request(pod, "InvalidType");
+
+        let new_pod_spec = PodSpec {
+            automount_service_account_token: Some(true),
+            ..Default::default()
+        };
+
+        let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
+        assert!(raw_response.is_ok());
+        let response: ValidationResponse = serde_json::from_slice(&raw_response.unwrap()).unwrap();
+        assert_eq!(response.accepted, false);
+        let error_message = response.message.unwrap_or_default();
+        let expected_error_message = "Object should be one of these kinds: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod";
+        assert_eq!(error_message, expected_error_message);
+
         Ok(())
     }
 }
