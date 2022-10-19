@@ -6,10 +6,10 @@ fmt:
 lint:
 	cargo clippy -- -D warnings
 
-
 .PHONY: test
 test: fmt lint
 	cargo test
+	cargo test --no-default-features
 
 .PHONY: clean
 clean:

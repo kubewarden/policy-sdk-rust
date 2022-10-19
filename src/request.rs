@@ -2,10 +2,14 @@ use anyhow::anyhow;
 use serde::{de::DeserializeOwned, Deserialize};
 use std::collections::{HashMap, HashSet};
 
-use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, ReplicaSet, StatefulSet};
-use k8s_openapi::api::batch::v1::{CronJob, Job};
-use k8s_openapi::api::core::v1::{Pod, PodSpec, ReplicationController};
-use k8s_openapi::Resource;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "cluster-context")] {
+        use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, ReplicaSet, StatefulSet};
+        use k8s_openapi::api::batch::v1::{CronJob, Job};
+        use k8s_openapi::api::core::v1::{Pod, PodSpec, ReplicationController};
+        use k8s_openapi::Resource;
+    }
+}
 
 /// ValidationRequest holds the data provided to the policy at evaluation time
 #[derive(Deserialize, Debug, Clone)]
@@ -158,6 +162,7 @@ where
         })
     }
 
+    #[cfg(feature = "cluster-context")]
     /// Extract PodSpec from high level objects. This method can be used to evaluate high level objects instead of just Pods.
     /// For example, it can be used to reject Deployments or StatefulSets that violate a policy instead of the Pods created by them.
     /// Objects supported are: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod
@@ -204,6 +209,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "cluster-context")]
 mod tests {
     use super::*;
     use k8s_openapi::api::apps::v1::{

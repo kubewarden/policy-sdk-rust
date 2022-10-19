@@ -30,9 +30,15 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - uses: actions-rs/cargo@v1
+      - name: test with default features enabled
+        uses: actions-rs/cargo@v1
         with:
           command: test
+      - name: test with default features disabled
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-default-features
 
   fmt:
     name: Rustfmt

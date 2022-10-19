@@ -18,13 +18,18 @@ pub mod settings;
 pub mod test;
 
 use crate::metadata::ProtocolVersion;
+#[cfg(feature = "cluster-context")]
 use crate::request::ValidationRequest;
 use crate::response::*;
 
-use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, ReplicaSet, StatefulSet};
-use k8s_openapi::api::batch::v1::{CronJob, Job};
-use k8s_openapi::api::core::v1::{Pod, PodSpec, ReplicationController};
-use k8s_openapi::Resource;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "cluster-context")] {
+        use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, ReplicaSet, StatefulSet};
+        use k8s_openapi::api::batch::v1::{CronJob, Job};
+        use k8s_openapi::api::core::v1::{Pod, PodSpec, ReplicationController};
+        use k8s_openapi::Resource;
+    }
+}
 
 /// Create an acceptance response
 pub fn accept_request() -> wapc_guest::CallResult {
@@ -52,6 +57,7 @@ pub fn mutate_request(mutated_object: serde_json::Value) -> wapc_guest::CallResu
     })?)
 }
 
+#[cfg(feature = "cluster-context")]
 /// Update the pod sec from the resource defined in the original object
 /// and create an acceptance response.
 /// # Arguments
@@ -239,19 +245,26 @@ pub fn protocol_version_guest(_payload: &[u8]) -> wapc_guest::CallResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::request::{GroupVersionKind, KubernetesAdmissionRequest};
     use assert_json_diff::assert_json_eq;
-    use jsonpath_lib as jsonpath;
-    use k8s_openapi::api::apps::v1::{
-        DaemonSet, DaemonSetSpec, Deployment, DeploymentSpec, ReplicaSet, ReplicaSetSpec,
-        StatefulSet, StatefulSetSpec,
-    };
-    use k8s_openapi::api::batch::v1::{CronJob, CronJobSpec, JobSpec, JobTemplateSpec};
-    use k8s_openapi::api::core::v1::PodTemplateSpec;
-    use k8s_openapi::api::core::v1::{ReplicationController, ReplicationControllerSpec};
-    use serde::ser::StdError;
-    use serde::Serialize;
     use serde_json::json;
+
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "cluster-context")] {
+            use crate::request::{GroupVersionKind, KubernetesAdmissionRequest};
+
+            use jsonpath_lib as jsonpath;
+            use serde::Serialize;
+            use serde::ser::StdError;
+
+            use k8s_openapi::api::batch::v1::{CronJob, CronJobSpec, JobSpec, JobTemplateSpec};
+            use k8s_openapi::api::core::v1::PodTemplateSpec;
+            use k8s_openapi::api::core::v1::{ReplicationController, ReplicationControllerSpec};
+            use k8s_openapi::api::apps::v1::{
+                DaemonSet, DaemonSetSpec, Deployment, DeploymentSpec, ReplicaSet, ReplicaSetSpec,
+                StatefulSet, StatefulSetSpec,
+            };
+        }
+    }
 
     #[test]
     fn test_mutate_request() -> Result<(), ()> {
@@ -339,6 +352,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "cluster-context")]
     fn create_validation_request<T: Serialize>(object: T, kind: &str) -> ValidationRequest<()> {
         let value = serde_json::to_value(object).unwrap();
         ValidationRequest {
@@ -354,6 +368,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "cluster-context")]
     fn check_if_automount_service_account_token_is_true(
         raw_response: Result<Vec<u8>, Box<dyn StdError + Send + Sync>>,
     ) -> Result<(), ()> {
@@ -379,6 +394,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "cluster-context")]
     #[test]
     fn test_mutate_pod_spec_from_request_with_deployment() -> Result<(), ()> {
         let deployment = Deployment {
@@ -405,6 +421,7 @@ mod tests {
         check_if_automount_service_account_token_is_true(raw_response)
     }
 
+    #[cfg(feature = "cluster-context")]
     #[test]
     fn test_mutate_pod_spec_from_request_with_replicaset() -> Result<(), ()> {
         let replicaset = ReplicaSet {
@@ -431,6 +448,7 @@ mod tests {
         check_if_automount_service_account_token_is_true(raw_response)
     }
 
+    #[cfg(feature = "cluster-context")]
     #[test]
     fn test_mutate_pod_spec_from_request_with_statefulset() -> Result<(), ()> {
         let statefulset = StatefulSet {
@@ -456,6 +474,7 @@ mod tests {
         check_if_automount_service_account_token_is_true(raw_response)
     }
 
+    #[cfg(feature = "cluster-context")]
     #[test]
     fn test_mutate_pod_spec_from_request_with_daemonset() -> Result<(), ()> {
         let daemonset = DaemonSet {
@@ -481,6 +500,7 @@ mod tests {
         check_if_automount_service_account_token_is_true(raw_response)
     }
 
+    #[cfg(feature = "cluster-context")]
     #[test]
     fn test_mutate_pod_spec_from_request_with_replicationcontroller() -> Result<(), ()> {
         let replicationcontroller = ReplicationController {
@@ -507,6 +527,7 @@ mod tests {
         check_if_automount_service_account_token_is_true(raw_response)
     }
 
+    #[cfg(feature = "cluster-context")]
     #[test]
     fn test_mutate_pod_spec_from_request_with_cronjob() -> Result<(), ()> {
         let cronjob = CronJob {
@@ -558,6 +579,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "cluster-context")]
     #[test]
     fn test_mutate_pod_spec_from_request_with_job() -> Result<(), ()> {
         let job = Job {
@@ -583,6 +605,7 @@ mod tests {
         check_if_automount_service_account_token_is_true(raw_response)
     }
 
+    #[cfg(feature = "cluster-context")]
     #[test]
     fn test_mutate_pod_spec_from_request_with_pod() -> Result<(), ()> {
         let pod = Pod {
@@ -622,6 +645,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "cluster-context")]
     #[test]
     fn test_mutate_pod_spec_from_request_with_invalid_resource_type() -> Result<(), ()> {
         let pod = Pod {
