@@ -2,7 +2,7 @@
 name = "kubewarden-policy-sdk"
 description = "Kubewarden Policy SDK for the Rust language"
 repository = "https://github.com/kubewarden/policy-sdk-rust"
-version = "0.8.1"
+version = "0.8.2"
 authors = [
   "Flavio Castelli <fcastelli@suse.com>",
   "Rafael Fernández López <rfernandezlopez@suse.com>"
@@ -16,6 +16,7 @@ cluster-context = [ "dep:k8s-openapi" ]
 
 [dependencies]
 anyhow = "1.0"
+cfg-if = "1.0"
 # Starting from k8s-openapi v0.14, it is NOT recommended to be explicit about
 # the kubernetes features to be used when building a library. That's because
 # the final version of the k8s API to be supported must be made by the consumer
