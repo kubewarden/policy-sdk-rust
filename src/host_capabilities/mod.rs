@@ -2,6 +2,7 @@ use crate::host_capabilities::verification::{KeylessInfo, KeylessPrefixInfo};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub mod crypto;
 pub mod net;
 pub mod oci;
 pub mod verification;
@@ -85,4 +86,24 @@ pub enum SigstoreVerificationInputV2 {
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
         annotations: Option<HashMap<String, String>>,
     },
+}
+
+pub mod crypto_v1 {
+    use crate::host_capabilities::crypto::Certificate;
+    use serde::{Deserialize, Serialize};
+
+    /// CertificateVerificationRequest holds information about a certificate and
+    /// a chain to validate it with.
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct CertificateVerificationRequest {
+        /// PEM-encoded certificate
+        pub cert: Certificate,
+        /// list of PEM-encoded certs, ordered by trust usage (intermediates first, root last)
+        pub cert_chain: Option<Vec<Certificate>>,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct CertificateVerificationResponse {
+        pub trusted: bool,
+    }
 }
