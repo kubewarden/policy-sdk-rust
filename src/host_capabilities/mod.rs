@@ -22,8 +22,8 @@ pub enum SigstoreVerificationInputV1 {
         annotations: Option<HashMap<String, String>>,
     },
 
-    // Require the verification of the manifest digest of an OCI object to be
-    // signed by Sigstore, using keyless mode
+    /// Require the verification of the manifest digest of an OCI object to be
+    /// signed by Sigstore, using keyless mode
     SigstoreKeylessVerify {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
@@ -51,8 +51,8 @@ pub enum SigstoreVerificationInputV2 {
         annotations: Option<HashMap<String, String>>,
     },
 
-    // Require the verification of the manifest digest of an OCI object to be
-    // signed by Sigstore, using keyless mode
+    /// Require the verification of the manifest digest of an OCI object to be
+    /// signed by Sigstore, using keyless mode
     SigstoreKeylessVerify {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
@@ -62,9 +62,9 @@ pub enum SigstoreVerificationInputV2 {
         annotations: Option<HashMap<String, String>>,
     },
 
-    // Require the verification of the manifest digest of an OCI object to be
-    // signed by Sigstore using keyless mode, where the passed subject is a URL
-    // prefix of the subject to match
+    /// Require the verification of the manifest digest of an OCI object to be
+    /// signed by Sigstore using keyless mode, where the passed subject is a URL
+    /// prefix of the subject to match
     SigstoreKeylessPrefixVerify {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
@@ -74,8 +74,8 @@ pub enum SigstoreVerificationInputV2 {
         annotations: Option<HashMap<String, String>>,
     },
 
-    // Require the verification of the manifest digest of an OCI object to be
-    // signed by Sigstore using keyless mode and performed in GitHub Actions
+    /// Require the verification of the manifest digest of an OCI object to be
+    /// signed by Sigstore using keyless mode and performed in GitHub Actions
     SigstoreGithubActionsVerify {
         /// String pointing to the object (e.g.: `registry.testing.lan/busybox:1.0.0`)
         image: String,
