@@ -117,6 +117,39 @@ pub fn verify_keyless_github_actions(
     verify(input)
 }
 
+/// verify sigstore signatures of an image using a user provided certificate
+/// # Arguments
+/// * `image` -  image to be verified
+/// * `certificate` - PEM encoded certificate used to verify the signature
+/// * `certificate_chain` - Optional. PEM encoded certificates used to verify `certificate`.
+///    When not specified, the certificate is assumed to be trusted
+/// * `require_rekor_bundle` - require the  signature layer to have a Rekor bundle.
+///    Having a Rekor bundle allows further checks to be performed,
+///    like ensuring the signature has been produced during the validity
+///    time frame of the certificate.
+///    It is recommended to set this value to `true` to have a more secure
+///    verification process.
+/// * `annotations` - annotations that must have been provided by all signers when they signed the OCI artifact
+pub fn verify_certificate(
+    image: &str,
+    certificate: String,
+    certificate_chain: Option<Vec<String>>,
+    require_rekor_bundle: bool,
+    annotations: Option<HashMap<String, String>>,
+) -> Result<VerificationResponse> {
+    let chain: Option<Vec<Vec<u8>>> =
+        certificate_chain.map(|c| c.iter().map(|cert| cert.as_bytes().to_vec()).collect());
+
+    let input = SigstoreVerificationInputV2::SigstoreCertificateVerify {
+        image: image.to_string(),
+        certificate: certificate.as_bytes().to_vec(),
+        certificate_chain: chain,
+        require_rekor_bundle,
+        annotations,
+    };
+
+    verify(input)
+}
 fn verify(input: SigstoreVerificationInputV2) -> Result<VerificationResponse> {
     let msg = serde_json::to_vec(&input)
         .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
@@ -290,6 +323,36 @@ mod tests {
             .times(1)
             .returning(|_, _, _, _| Err(Box::new(core::fmt::Error {})));
         let res = verify_keyless_github_actions("image", "owner".to_string(), None, None);
+
+        assert!(res.is_err())
+    }
+
+    #[serial]
+    #[test]
+    fn verify_certificate_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect().times(1).returning(|_, _, _, _| {
+            Ok(serde_json::to_vec(&{
+                VerificationResponse {
+                    is_trusted: true,
+                    digest: "digest".to_string(),
+                }
+            })
+            .unwrap())
+        });
+        let res = verify_certificate("image", "CERT".to_string(), None, true, None);
+
+        assert_eq!(res.unwrap().is_trusted, true)
+    }
+
+    #[serial]
+    #[test]
+    fn verify_certificate_not_trusted() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect()
+            .times(1)
+            .returning(|_, _, _, _| Err(Box::new(core::fmt::Error {})));
+        let res = verify_certificate("image", "CERT".to_string(), None, true, None);
 
         assert!(res.is_err())
     }
