@@ -122,6 +122,9 @@ pub mod crypto_v1 {
         pub cert: Certificate,
         /// list of PEM-encoded certs, ordered by trust usage (intermediates first, root last)
         pub cert_chain: Option<Vec<Certificate>>,
+        /// RFC 3339 time format string, to check expiration against. If None,
+        /// certificate is assumed never expired
+        pub not_after: Option<String>,
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]

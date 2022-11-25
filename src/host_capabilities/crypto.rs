@@ -23,8 +23,16 @@ pub enum CertificateEncoding {
 }
 
 /// Verify_cert verifies cert against the passed cert_chain
-pub fn verify_cert(cert: Certificate, cert_chain: Option<Vec<Certificate>>) -> Result<bool> {
-    let req = CertificateVerificationRequest { cert, cert_chain };
+pub fn verify_cert(
+    cert: Certificate,
+    cert_chain: Option<Vec<Certificate>>,
+    not_after: Option<String>,
+) -> Result<bool> {
+    let req = CertificateVerificationRequest {
+        cert,
+        cert_chain,
+        not_after,
+    };
     let msg = serde_json::to_vec(&req).map_err(|e| {
         anyhow!(
             "error serializing the certificate verification request: {}",
