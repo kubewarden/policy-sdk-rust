@@ -5,7 +5,8 @@ repository = "https://github.com/kubewarden/policy-sdk-rust"
 version = "0.8.3"
 authors = [
   "Flavio Castelli <fcastelli@suse.com>",
-  "Rafael Fernández López <rfernandezlopez@suse.com>"
+  "Rafael Fernández López <rfernandezlopez@suse.com>",
+  "Víctor Cuadrado Juan <vcuadradojuan@suse.de>"
 ]
 edition = "2018"
 license = "Apache-2.0"
