@@ -22,7 +22,14 @@ pub enum CertificateEncoding {
     Pem,
 }
 
-/// Verify_cert verifies cert against the passed cert_chain
+/// Verify_cert verifies cert's trust against the passed cert_chain, and
+/// expiration and validation time of the certificate.
+/// Accepts 3 arguments:
+/// * cert: PEM-encoded certificate to verify.
+/// * cert_chain: list of PEM-encoded certs, ordered by trust usage
+///   (intermediates first, root last). If empty, certificate is assumed trusted.
+/// * not_after: string in RFC 3339 time format, to check expiration against.
+///   If None, certificate is assumed never expired.
 pub fn verify_cert(
     cert: Certificate,
     cert_chain: Option<Vec<Certificate>>,

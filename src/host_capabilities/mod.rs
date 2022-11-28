@@ -121,6 +121,7 @@ pub mod crypto_v1 {
         /// PEM-encoded certificate
         pub cert: Certificate,
         /// list of PEM-encoded certs, ordered by trust usage (intermediates first, root last)
+        /// If empty, certificate is assumed trusted
         pub cert_chain: Option<Vec<Certificate>>,
         /// RFC 3339 time format string, to check expiration against. If None,
         /// certificate is assumed never expired
