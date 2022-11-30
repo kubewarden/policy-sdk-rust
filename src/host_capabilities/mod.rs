@@ -131,5 +131,7 @@ pub mod crypto_v1 {
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct CertificateVerificationResponse {
         pub trusted: bool,
+        /// empty when trusted is true
+        pub reason: String,
     }
 }

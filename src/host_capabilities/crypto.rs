@@ -22,6 +22,28 @@ pub enum CertificateEncoding {
     Pem,
 }
 
+/// Used as return of verify_cert()
+#[derive(Debug)]
+pub enum BoolWithReason {
+    True,
+    False(String),
+}
+
+impl From<BoolWithReason> for CertificateVerificationResponse {
+    fn from(b: BoolWithReason) -> CertificateVerificationResponse {
+        match b {
+            BoolWithReason::True => CertificateVerificationResponse {
+                trusted: true,
+                reason: "".to_string(),
+            },
+            BoolWithReason::False(reason) => CertificateVerificationResponse {
+                trusted: false,
+                reason,
+            },
+        }
+    }
+}
+
 /// Verify_cert verifies cert's trust against the passed cert_chain, and
 /// expiration and validation time of the certificate.
 /// Accepts 3 arguments:
@@ -34,7 +56,7 @@ pub fn verify_cert(
     cert: Certificate,
     cert_chain: Option<Vec<Certificate>>,
     not_after: Option<String>,
-) -> Result<bool> {
+) -> Result<BoolWithReason> {
     let req = CertificateVerificationRequest {
         cert,
         cert_chain,
@@ -51,6 +73,11 @@ pub fn verify_cert(
             .map_err(|e| anyhow!("{}", e))?;
 
     let response: CertificateVerificationResponse = serde_json::from_slice(&response_raw)?;
-
-    Ok(response.trusted)
+    match response.trusted {
+        true => Ok(BoolWithReason::True),
+        false => Ok(BoolWithReason::False(format!(
+            "Certificate not trusted: {}",
+            response.reason
+        ))),
+    }
 }
