@@ -23,9 +23,25 @@ pub enum CertificateEncoding {
 }
 
 /// Used as return of verify_cert()
+#[derive(Debug)]
 pub enum BoolWithReason {
     True,
     False(String),
+}
+
+impl From<BoolWithReason> for CertificateVerificationResponse {
+    fn from(b: BoolWithReason) -> CertificateVerificationResponse {
+        match b {
+            BoolWithReason::True => CertificateVerificationResponse {
+                trusted: true,
+                reason: "".to_string(),
+            },
+            BoolWithReason::False(reason) => CertificateVerificationResponse {
+                trusted: false,
+                reason,
+            },
+        }
+    }
 }
 
 /// Verify_cert verifies cert's trust against the passed cert_chain, and
