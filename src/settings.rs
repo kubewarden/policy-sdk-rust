@@ -9,7 +9,7 @@ pub trait Validatable {
 
 /// A SettingsValidationResponse object holds the outcome of settings
 /// validation.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct SettingsValidationResponse {
     /// True if the settings are valid
     pub valid: bool,
