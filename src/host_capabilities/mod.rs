@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod crypto;
+#[cfg(feature = "cluster-context")]
+pub mod kubernetes;
 pub mod net;
 pub mod oci;
 pub mod verification;
