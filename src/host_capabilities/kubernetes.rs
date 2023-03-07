@@ -84,3 +84,41 @@ where
         )
     })
 }
+
+/// Describe the set of parameters used by the `get_resource` function.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GetResourceRequest {
+    /// apiVersion of the resource (v1 for core group, groupName/groupVersions for other).
+    pub api_version: String,
+    /// Singular PascalCase name of the resource
+    pub kind: String,
+    /// The name of the resource
+    pub name: String,
+    /// The namespace used to search namespaced resources. Cluster level resources
+    /// must set this parameter to `None`
+    pub namespace: Option<String>,
+    /// Disable caching of results obtained from Kubernetes API Server
+    /// By default query results are cached for 5 seconds, that might cause
+    /// stale data to be returned.
+    /// However, making too many requests against the Kubernetes API Server
+    /// might cause issues to the cluster
+    pub disable_cache: bool,
+}
+
+/// Get a specific Kubernetes resource.
+pub fn get_resource<T>(req: &GetResourceRequest) -> Result<T>
+where
+    T: serde::de::DeserializeOwned + Clone,
+{
+    let msg = serde_json::to_vec(req)
+        .map_err(|e| anyhow!("error serializing the get resource request: {}", e))?;
+    let response_raw = wapc_guest::host_call("kubewarden", "kubernetes", "get_resource", &msg)
+        .map_err(|e| anyhow!("{}", e))?;
+
+    serde_json::from_slice(&response_raw).map_err(|e| {
+        anyhow!(
+            "error deserializing get resource response into Kubernetes resource: {:?}",
+            e
+        )
+    })
+}
