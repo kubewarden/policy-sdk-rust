@@ -2,9 +2,6 @@ use std::collections::HashMap;
 
 use anyhow::anyhow;
 
-#[cfg(feature = "cluster-context")]
-pub mod cluster_context;
-
 pub use wapc_guest;
 
 pub mod host_capabilities;
