@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use tests::mock_wapc as wapc_guest;
 
 /// VerificationResponse holds the response of a sigstore signatures verification
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct VerificationResponse {
     /// true if the image is trusted, which means verification was successfull
     pub is_trusted: bool,
@@ -15,7 +15,7 @@ pub struct VerificationResponse {
 }
 
 /// KeylessInfo holds information about a keyless signature
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct KeylessInfo {
     /// the issuer identifier
     pub issuer: String,
@@ -24,7 +24,7 @@ pub struct KeylessInfo {
 }
 
 /// KeylessPrefixInfo holds information about a keyless signature
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct KeylessPrefixInfo {
     /// the issuer identifier
     pub issuer: String,
