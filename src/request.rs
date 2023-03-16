@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
 cfg_if::cfg_if! {
@@ -12,7 +12,7 @@ cfg_if::cfg_if! {
 }
 
 /// ValidationRequest holds the data provided to the policy at evaluation time
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ValidationRequest<T: Default> {
     /// The policy settings
     pub settings: T,
@@ -23,7 +23,7 @@ pub struct ValidationRequest<T: Default> {
 
 /// Kubernetes' [AdmissionReview](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 /// request.
-#[derive(Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
 pub struct KubernetesAdmissionRequest {
     /// UID is an identifier for the individual request/response. It allows us to distinguish instances of requests which are
@@ -110,7 +110,7 @@ pub struct KubernetesAdmissionRequest {
 }
 
 /// GroupVersionKind unambiguously identifies a kind
-#[derive(Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
 pub struct GroupVersionKind {
     pub group: String,
@@ -119,7 +119,7 @@ pub struct GroupVersionKind {
 }
 
 /// GroupVersionResource unambiguously identifies a resource
-#[derive(Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
 pub struct GroupVersionResource {
     pub group: String,
@@ -128,7 +128,7 @@ pub struct GroupVersionResource {
 }
 
 /// UserInfo holds information about the user who made the request
-#[derive(Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
 pub struct UserInfo {
     /// The name that uniquely identifies this user among all active users.
