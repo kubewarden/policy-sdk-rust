@@ -15,6 +15,7 @@ pub struct Certificate {
 
 /// The encoding of the certificate
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "lowercase")]
 pub enum CertificateEncoding {
     #[allow(missing_docs)]
     Der,
