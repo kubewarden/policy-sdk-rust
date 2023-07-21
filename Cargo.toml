@@ -2,7 +2,7 @@
 name = "kubewarden-policy-sdk"
 description = "Kubewarden Policy SDK for the Rust language"
 repository = "https://github.com/kubewarden/policy-sdk-rust"
-version = "0.9.4"
+version = "0.9.5"
 authors = [
   "Flavio Castelli <fcastelli@suse.com>",
   "Rafael Fernández López <rfernandezlopez@suse.com>",
