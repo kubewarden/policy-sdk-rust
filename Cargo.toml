@@ -2,7 +2,7 @@
 name = "kubewarden-policy-sdk"
 description = "Kubewarden Policy SDK for the Rust language"
 repository = "https://github.com/kubewarden/policy-sdk-rust"
-version = "0.9.4"
+version = "0.9.5"
 authors = [
   "Flavio Castelli <fcastelli@suse.com>",
   "Rafael Fernández López <rfernandezlopez@suse.com>",
@@ -46,7 +46,7 @@ serde_yaml = "0.9.25"
 slog = "2.7.0"
 url = { version = "2.4.0", features = ["serde"] }
 wapc-guest = "1.1.0"
-chrono = "0.4.26"
+chrono = { version = "0.4", default-features = false }
 
 [dev-dependencies]
 assert-json-diff = "2.0.2"
