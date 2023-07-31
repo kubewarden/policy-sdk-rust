@@ -24,7 +24,7 @@ jobs:
     steps:
     - name: Create Release
       id: create-release
-      uses: actions/create-release@v1
+      uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -39,8 +39,8 @@ jobs:
     needs:
       - ci
     steps:
-      -  uses: actions/checkout@v3
-      -  uses: actions-rs/toolchain@v1
+      -  uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3
+      -  uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1
          with:
            toolchain: stable
            override: true
