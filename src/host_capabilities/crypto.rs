@@ -15,11 +15,17 @@ pub struct Certificate {
 
 /// The encoding of the certificate
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "lowercase")]
 pub enum CertificateEncoding {
     #[allow(missing_docs)]
+    // Be explicit about how the name should be handled
+    // see https://github.com/kubewarden/policy-sdk-rust/issues/105
+    #[serde(rename = "Der")]
     Der,
+
     #[allow(missing_docs)]
+    // Be explicit about how the name should be handled
+    // see https://github.com/kubewarden/policy-sdk-rust/issues/105
+    #[serde(rename = "Pem")]
     Pem,
 }
 
