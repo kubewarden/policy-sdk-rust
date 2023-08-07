@@ -36,7 +36,7 @@ cfg-if = "1.0"
 # This however can lead to issues when executing commands like
 # cargo `build|check|doc`. That's because the `k8s-openapi` is specified again
 # inside of the `dev-dependencies`, this time with a k8s feature enabled
-k8s-openapi = { version = "0.18.0", default-features = false, optional = true }
+k8s-openapi = { version = "0.19.0", default-features = false, optional = true }
 num = "0.4"
 num-derive = "0.4"
 num-traits = "0.2"
@@ -52,6 +52,6 @@ chrono = { version = "0.4", default-features = false }
 assert-json-diff = "2.0.2"
 mockall = "0.11.4"
 serial_test = "2.0.0"
-k8s-openapi = { version = "0.18.0", default-features = false, features = [ "v1_26" ] }
+k8s-openapi = { version = "0.19.0", default-features = false, features = [ "v1_26" ] }
 jsonpath_lib = "0.3.0"
 
