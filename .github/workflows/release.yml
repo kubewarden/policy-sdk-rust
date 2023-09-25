@@ -27,7 +27,7 @@ jobs:
           echo TAG_NAME=$(echo ${{ github.ref_name }}) >> $GITHUB_ENV
 
       - name: Get release ID from the release created by release drafter
-        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
         with:
           script: |
             let releases = await github.rest.repos.listReleases({
@@ -44,7 +44,7 @@ jobs:
             core.setFailed(`Draft release not found`)
 
       - name: Publish release
-        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
         with:
           script: |
             const {RELEASE_ID} = process.env
@@ -65,8 +65,8 @@ jobs:
     needs:
       - ci
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
-      - uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1.0.7
         with:
           toolchain: stable
           override: true
