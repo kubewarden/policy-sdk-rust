@@ -74,7 +74,7 @@ where
     let msg = serde_json::to_vec(req)
         .map_err(|e| anyhow!("error serializing the list all resources request: {}", e))?;
     let response_raw =
-        wapc_guest::host_call("kubewarden", "kubernetes", "list_all_resources", &msg)
+        wapc_guest::host_call("kubewarden", "kubernetes", "list_resources_all", &msg)
             .map_err(|e| anyhow!("{}", e))?;
 
     serde_json::from_slice(&response_raw).map_err(|e| {
