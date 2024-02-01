@@ -5,7 +5,6 @@ use serde_json::json;
 /// Response to manifest digest request
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ManifestDigestResponse {
-    /// list of Ips that have been resolved
     pub digest: String,
 }
 
