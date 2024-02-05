@@ -42,7 +42,7 @@ num-derive = "0.4"
 num-traits = "0.2"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9.30"
+serde_yaml = "0.9.31"
 slog = "2.7.0"
 url = { version = "2.5.0", features = ["serde"] }
 wapc-guest = "1.1.0"
