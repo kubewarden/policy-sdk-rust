@@ -115,9 +115,11 @@ pub enum SigstoreVerificationInputV2 {
 pub mod crypto_v1 {
     use crate::host_capabilities::crypto::Certificate;
     use serde::{Deserialize, Serialize};
+    use serde_with::{serde_as, NoneAsEmptyString};
 
     /// CertificateVerificationRequest holds information about a certificate and
     /// a chain to validate it with.
+    #[serde_as]
     #[derive(Serialize, Deserialize, Debug)]
     pub struct CertificateVerificationRequest {
         /// PEM-encoded certificate
@@ -127,6 +129,7 @@ pub mod crypto_v1 {
         pub cert_chain: Option<Vec<Certificate>>,
         /// RFC 3339 time format string, to check expiration against. If None,
         /// certificate is assumed never expired
+        #[serde_as(as = "NoneAsEmptyString")]
         pub not_after: Option<String>,
     }
 
