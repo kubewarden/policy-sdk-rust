@@ -127,7 +127,46 @@ pub mod crypto_v1 {
         pub cert_chain: Option<Vec<Certificate>>,
         /// RFC 3339 time format string, to check expiration against. If None,
         /// certificate is assumed never expired
+        #[serde(with = "optional_string_as_none")]
         pub not_after: Option<String>,
+    }
+
+    /// Custom serialization and deserialization method. Ensure Some("") is serialized/deserialized
+    /// as None
+    mod optional_string_as_none {
+        use serde::{Deserialize, Deserializer, Serializer};
+
+        pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            Ok(Option::<String>::deserialize(deserializer)?.and_then(|s| {
+                if s.is_empty() {
+                    None
+                } else {
+                    Some(s)
+                }
+            }))
+        }
+
+        pub fn serialize<S>(
+            optional_string: &Option<String>,
+            serializer: S,
+        ) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            match optional_string {
+                Some(s) => {
+                    if s.is_empty() {
+                        serializer.serialize_none()
+                    } else {
+                        serializer.serialize_some(s)
+                    }
+                }
+                None => serializer.serialize_none(),
+            }
+        }
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -135,5 +174,49 @@ pub mod crypto_v1 {
         pub trusted: bool,
         /// empty when trusted is true
         pub reason: String,
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use serde_json::json;
+
+        #[test]
+        fn certificate_verification_request_handle_serialization_with_empty_not_after() {
+            let data = "hello world".as_bytes().to_owned();
+            let request = CertificateVerificationRequest {
+                cert: Certificate {
+                    encoding: crate::host_capabilities::crypto::CertificateEncoding::Pem,
+                    data,
+                },
+                cert_chain: None,
+                not_after: Some("".to_owned()),
+            };
+
+            let request_json = serde_json::to_value(request).unwrap();
+            println!("CIAO {:?}", request_json);
+            let request_obj = request_json
+                .as_object()
+                .expect("cannot convert json data back to an object");
+            assert_eq!(
+                Some(&serde_json::Value::Null),
+                request_obj.get(&"not_after".to_owned())
+            );
+        }
+
+        #[test]
+        fn certificate_verification_request_handle_deserialization_with_empty_not_after() {
+            let data = "hello world".as_bytes().to_owned();
+            let input = json!({
+                "cert": {
+                    "encoding": "Pem",
+                    "data": data
+                },
+                "not_after": ""
+            });
+
+            let request: CertificateVerificationRequest = serde_json::from_value(input).unwrap();
+            assert!(request.not_after.is_none());
+        }
     }
 }
