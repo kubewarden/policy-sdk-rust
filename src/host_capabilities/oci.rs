@@ -25,7 +25,7 @@ pub enum OciManifestResponse {
 }
 
 /// Computes the digest of the OCI object referenced by `image`
-pub fn manifest_digest(image: &str) -> Result<ManifestDigestResponse> {
+pub fn get_manifest_digest(image: &str) -> Result<ManifestDigestResponse> {
     let req = json!(image);
     let msg = serde_json::to_vec(&req)
         .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
@@ -38,7 +38,7 @@ pub fn manifest_digest(image: &str) -> Result<ManifestDigestResponse> {
 }
 
 /// Fetches OCI manifest referenced by `image`
-pub fn manifest(image: &str) -> Result<OciManifestResponse> {
+pub fn get_manifest(image: &str) -> Result<OciManifestResponse> {
     let req = json!(image);
     let msg = serde_json::to_vec(&req)
         .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
@@ -184,7 +184,7 @@ mod tests {
                         == "\"ghcr.io/kubewarden/policy-server:latest\""
             })
             .returning(|_, _, _, _| Ok(serde_json::to_vec(&create_oci_image_manifest()).unwrap()));
-        let response = manifest("ghcr.io/kubewarden/policy-server:latest")
+        let response = get_manifest("ghcr.io/kubewarden/policy-server:latest")
             .expect("failed to get oci manifest reponse");
         match response {
             OciManifestResponse::Image(image) => {
@@ -211,7 +211,7 @@ mod tests {
             .returning(|_, _, _, _| {
                 Ok(serde_json::to_vec(&create_oci_index_image_manifest()).unwrap())
             });
-        let response = manifest("ghcr.io/kubewarden/policy-server:latest")
+        let response = get_manifest("ghcr.io/kubewarden/policy-server:latest")
             .expect("failed to get oci manifest reponse");
         match response {
             OciManifestResponse::Image(_) => panic!("Invalid oci manifest type returned"),
