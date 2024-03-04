@@ -48,7 +48,7 @@ slog = "2.7.0"
 url = { version = "2.5.0", features = ["serde"] }
 wapc-guest = "1.1.0"
 chrono = { version = "0.4", default-features = false }
-oci-spec = "0.6.4"
+oci-spec = "0.6.5"
 
 [dev-dependencies]
 assert-json-diff = "2.0.2"
