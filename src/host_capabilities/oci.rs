@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use oci_spec::image::{ImageIndex, ImageManifest};
+use oci_spec::image::{ImageConfiguration, ImageIndex, ImageManifest};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 #[cfg(test)]
@@ -24,6 +24,14 @@ pub enum OciManifestResponse {
     ImageIndex(Box<ImageIndex>),
 }
 
+/// Response to manifest and config request
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct OciManifestAndConfigResponse {
+    pub manifest: ImageManifest,
+    pub digest: String,
+    pub config: ImageConfiguration,
+}
+
 /// Computes the digest of the OCI object referenced by `image`
 pub fn get_manifest_digest(image: &str) -> Result<ManifestDigestResponse> {
     let req = json!(image);
@@ -44,8 +52,20 @@ pub fn get_manifest(image: &str) -> Result<OciManifestResponse> {
         .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
     let response_raw = wapc_guest::host_call("kubewarden", "oci", "v1/oci_manifest", &msg)
         .map_err(|e| anyhow!("error invoking wapc oci.manifest_digest: {:?}", e))?;
-
     let response: OciManifestResponse = serde_json::from_slice(&response_raw)?;
+    Ok(response)
+}
+
+/// Fetches OCI image manifest and configuration referenced by `image`
+pub fn get_manifest_and_config(image: &str) -> Result<OciManifestAndConfigResponse> {
+    let req = json!(image);
+    let msg = serde_json::to_vec(&req)
+        .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
+    let response_raw =
+        wapc_guest::host_call("kubewarden", "oci", "v1/oci_manifest_config", &msg)
+            .map_err(|e| anyhow!("error invoking wapc oci.manifest_and_config: {:?}", e))?;
+
+    let response: OciManifestAndConfigResponse = serde_json::from_slice(&response_raw)?;
 
     Ok(response)
 }
@@ -55,8 +75,9 @@ mod tests {
     use super::*;
     use mockall::automock;
     use oci_spec::image::{
-        Arch, Descriptor, DescriptorBuilder, ImageIndexBuilder, ImageManifestBuilder, MediaType,
-        Os, PlatformBuilder, SCHEMA_VERSION,
+        Arch, ConfigBuilder, Descriptor, DescriptorBuilder, History, HistoryBuilder,
+        ImageConfigurationBuilder, ImageIndexBuilder, ImageManifestBuilder, MediaType, Os,
+        PlatformBuilder, RootFsBuilder, SCHEMA_VERSION,
     };
     use serial_test::serial;
 
@@ -169,6 +190,75 @@ mod tests {
             .expect("build image manifest")
     }
 
+    fn create_oci_image_configuration() -> ImageConfiguration {
+        let config = ConfigBuilder::default()
+            .user("65533:65533".to_string())
+            .exposed_ports(vec!["3000/tcp".to_string()])
+            .env(vec![
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin".to_string(),
+            ])
+            .entrypoint(vec!["/policy-server".to_string()])
+            .working_dir("/".to_string())
+            .build()
+            .expect("build config");
+
+        let history: Vec<History> = [
+            (
+                "2024-06-17T17:55:55.014762797Z",
+                "COPY /etc/passwd /etc/passwd # buildkit",
+                "buildkit.dockerfile.v0",
+            ),
+            (
+                "2024-06-17T17:55:55.101579791Z",
+                "COPY /etc/group /etc/group # buildkit",
+                "buildkit.dockerfile.v0",
+            ),
+            (
+                "2024-06-17T17:55:55.616407556Z",
+                "COPY --chmod=0755 policy-server-x86_64 /policy-server # buildkit",
+                "buildkit.dockerfile.v0",
+            ),
+            (
+                "2024-06-17T17:55:55.630019968Z",
+                "ADD Cargo.lock /Cargo.lock # buildkit",
+                "buildkit.dockerfile.v0",
+            ),
+        ]
+        .iter()
+        .map(|l| {
+            HistoryBuilder::default()
+                .created(l.0.to_string())
+                .created_by(l.1.to_string())
+                .comment(l.2.to_string())
+                .build()
+                .expect("build history")
+        })
+        .collect();
+        let rootfs = RootFsBuilder::default()
+            .diff_ids(vec![
+                "sha256:d721137c9798b29b57611789af80d5fa864be33288150fdd8c35f88cf24998be"
+                    .to_string(),
+                "sha256:a1be1b83b5a388de0ac5baacd2afaf632c8ae61cffbbf4306d5e9be92b5b46b9"
+                    .to_string(),
+                "sha256:8be913709f915800a634431f239c34e330a9f9a09ea944d38ead4d5f201d22e7"
+                    .to_string(),
+                "sha256:69bb22b8d1508715424f4d89f415843acceba84087277078a30dda65c47796d7"
+                    .to_string(),
+            ])
+            .typ("layers".to_string())
+            .build()
+            .expect("build rootfs");
+        ImageConfigurationBuilder::default()
+            .architecture(Arch::Amd64)
+            .config(config)
+            .history(history)
+            .created("2024-06-17T17:55:55.630019968Z".to_string())
+            .os(Os::Linux)
+            .rootfs(rootfs)
+            .build()
+            .expect("build image configuration")
+    }
+
     // these tests need to run sequentially because mockall creates a global context to create the mocks
     #[serial]
     #[test]
@@ -219,5 +309,35 @@ mod tests {
                 assert_eq!(*image, create_oci_index_image_manifest());
             }
         }
+    }
+
+    // these tests need to run sequentially because mockall creates a global context to create the mocks
+    #[serial]
+    #[test]
+    fn verify_oci_image_manifest_and_config() {
+        let ctx = mock_wapc::host_call_context();
+        ctx.expect()
+            .once()
+            .withf(|binding: &str, ns: &str, op: &str, msg: &[u8]| {
+                binding == "kubewarden"
+                    && ns == "oci"
+                    && op == "v1/oci_manifest_config"
+                    && std::str::from_utf8(msg).unwrap()
+                        == "\"ghcr.io/kubewarden/policy-server:latest\""
+            })
+            .returning(|_, _, _, _| {
+                let response_raw = serde_json::to_vec(&OciManifestAndConfigResponse {
+                    manifest: create_oci_image_manifest(),
+                    digest: "sha256:983".to_owned(),
+                    config: create_oci_image_configuration(),
+                })
+                .expect("serialize response");
+                Ok(response_raw)
+            });
+        let response = get_manifest_and_config("ghcr.io/kubewarden/policy-server:latest")
+            .expect("failed to get oci manifest reponse");
+        assert_eq!(response.config, create_oci_image_configuration());
+        assert_eq!(response.manifest, create_oci_image_manifest());
+        assert_eq!(response.digest, "sha256:983");
     }
 }
