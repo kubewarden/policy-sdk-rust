@@ -52,7 +52,7 @@ oci-spec = "0.6.5"
 
 [dev-dependencies]
 assert-json-diff = "2.0.2"
-mockall = "0.12.1"
+mockall = "0.13.0"
 serial_test = "3.1.1"
 k8s-openapi = { version = "0.22.0", default-features = false, features = [
   "v1_30",
