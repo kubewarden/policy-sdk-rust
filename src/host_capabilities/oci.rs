@@ -75,11 +75,12 @@ mod tests {
     use super::*;
     use mockall::automock;
     use oci_spec::image::{
-        Arch, ConfigBuilder, Descriptor, DescriptorBuilder, History, HistoryBuilder,
+        Arch, ConfigBuilder, Descriptor, DescriptorBuilder, Digest, History, HistoryBuilder,
         ImageConfigurationBuilder, ImageIndexBuilder, ImageManifestBuilder, MediaType, Os,
         PlatformBuilder, RootFsBuilder, SCHEMA_VERSION,
     };
     use serial_test::serial;
+    use std::str::FromStr;
 
     #[automock()]
     pub mod wapc {
@@ -131,11 +132,13 @@ mod tests {
                 .os(os)
                 .build()
                 .expect("build platform");
+            let digest = Digest::from_str(l.1).expect("parse digest");
+            let size: u64 = u64::try_from(l.0).expect("parse size");
             DescriptorBuilder::default()
                 .media_type(MediaType::ImageLayerGzip)
-                .size(l.0)
+                .size(size)
                 .platform(platform)
-                .digest(l.1.to_owned())
+                .digest(digest)
                 .build()
                 .expect("build layer")
         })
@@ -149,10 +152,14 @@ mod tests {
     }
 
     fn create_oci_image_manifest() -> ImageManifest {
+        let digest = Digest::from_str(
+            "sha256:b5b2b2c507a0944348e0303114d8d93aaaa081732b86451d9bce1f432a537bc7",
+        )
+        .expect("parse digest");
         let config = DescriptorBuilder::default()
             .media_type(MediaType::ImageConfig)
-            .size(7023)
-            .digest("sha256:b5b2b2c507a0944348e0303114d8d93aaaa081732b86451d9bce1f432a537bc7")
+            .size(7023u64)
+            .digest(digest)
             .build()
             .expect("build config descriptor");
 
@@ -172,10 +179,12 @@ mod tests {
         ]
         .iter()
         .map(|l| {
+            let digest = Digest::from_str(l.1).expect("parse digest");
+            let size = u64::try_from(l.0).expect("parse size");
             return DescriptorBuilder::default()
                 .media_type(MediaType::ImageLayerGzip)
-                .size(l.0)
-                .digest(l.1.to_owned())
+                .size(size)
+                .digest(digest)
                 .build()
                 .expect("build manifest");
         })
