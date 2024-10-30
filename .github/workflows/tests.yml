@@ -9,7 +9,7 @@ env:
   # This is required because commands like `cargo check` do not
   # read the cargo development dependencies.
   # See https://github.com/Arnavion/k8s-openapi/issues/132
-  K8S_OPENAPI_ENABLED_VERSION: "1.30"
+  K8S_OPENAPI_ENABLED_VERSION: "1.31"
 
 jobs:
   check:

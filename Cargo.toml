@@ -2,7 +2,7 @@
 name = "kubewarden-policy-sdk"
 description = "Kubewarden Policy SDK for the Rust language"
 repository = "https://github.com/kubewarden/policy-sdk-rust"
-version = "0.11.1"
+version = "0.11.2"
 authors = [
   "Kubewarden developers <cncf-kubewarden-maintainers@lists.cncf.io>",
   "Flavio Castelli <fcastelli@suse.com>",
@@ -17,7 +17,7 @@ default = ["cluster-context"]
 cluster-context = ["k8s-openapi"]
 
 [package.metadata.docs.rs]
-features = ["k8s-openapi/v1_30"]
+features = ["k8s-openapi/v1_31"]
 
 [dependencies]
 anyhow = "1.0"
@@ -55,6 +55,6 @@ assert-json-diff = "2.0.2"
 mockall = "0.13.0"
 serial_test = "3.1.1"
 k8s-openapi = { version = "0.23.0", default-features = false, features = [
-  "v1_30",
+  "v1_31",
 ] }
 jsonpath_lib = "0.3.0"
