@@ -97,18 +97,18 @@ mod test {
         };
 
         o!(
-             "int0" => 10 as u8,
-             "int1" => -10 as i8,
-             "int2" => 10000 as u16,
-             "int3" => -10000 as i16,
-             "int4" => 2_000_000_000 as u32,
-             "int5" => -2_000_000_000 as i32,
-             "int6" => 2_000_000_000 as usize,
-             "int7" => -2_000_000_000 as isize,
-             "int8" => 2_000_000_000_000 as u64,
-             "int9" => -2_000_000_000_000 as i64,
-             "float0" => 13.2 as f32,
-             "float1" => -105.2 as f64,
+             "int0" => 10_u8,
+             "int1" => -10_i8,
+             "int2" => 10000_u16,
+             "int3" => -10000_i16,
+             "int4" => 2_000_000_000_u32,
+             "int5" => -2_000_000_000_i32,
+             "int6" => 2_000_000_000_usize,
+             "int7" => -2_000_000_000_isize,
+             "int8" => 2_000_000_000_000_u64,
+             "int9" => -2_000_000_000_000_i64,
+             "float0" => 13.2_f32,
+             "float1" => -105.2_f64,
              "string0" => "foo",
              "string1" => "1.2.1",
              "char0" => 'x',
@@ -151,8 +151,8 @@ mod test {
         expected.insert("int5".into(), json!(-2000000000));
         expected.insert("int6".into(), json!(2000000000));
         expected.insert("int7".into(), json!(-2000000000));
-        expected.insert("int8".into(), json!(2000000000000 as i64));
-        expected.insert("int9".into(), json!(-2000000000000 as i64));
+        expected.insert("int8".into(), json!(2000000000000_i64));
+        expected.insert("int9".into(), json!(-2000000000000_i64));
         expected.insert("none".into(), serde_json::Value::Null);
         expected.insert("string0".into(), json!("foo"));
         expected.insert("string1".into(), json!("1.2.1"));
