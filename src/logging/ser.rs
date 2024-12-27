@@ -37,7 +37,7 @@ macro_rules! emit_m {
     };
 }
 
-impl<'a> slog::Serializer for KubewardenFieldSerializer<'a> {
+impl slog::Serializer for KubewardenFieldSerializer<'_> {
     emit_m!(emit_u8, u8);
     emit_m!(emit_i8, i8);
     emit_m!(emit_u16, u16);
