@@ -194,7 +194,6 @@ pub mod crypto_v1 {
             };
 
             let request_json = serde_json::to_value(request).unwrap();
-            println!("CIAO {:?}", request_json);
             let request_obj = request_json
                 .as_object()
                 .expect("cannot convert json data back to an object");
