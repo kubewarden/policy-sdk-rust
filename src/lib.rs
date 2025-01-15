@@ -19,6 +19,9 @@ use crate::metadata::ProtocolVersion;
 use crate::request::ValidationRequest;
 use crate::response::*;
 
+#[cfg(feature = "crd")]
+pub mod crd;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "cluster-context")] {
         use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, ReplicaSet, StatefulSet};
