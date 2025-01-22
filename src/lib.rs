@@ -19,6 +19,9 @@ use crate::metadata::ProtocolVersion;
 use crate::request::ValidationRequest;
 use crate::response::*;
 
+#[cfg(feature = "crd")]
+pub mod crd;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "cluster-context")] {
         use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, ReplicaSet, StatefulSet};
@@ -310,7 +313,7 @@ mod tests {
     #[test]
     fn test_reject_request() -> Result<(), ()> {
         let code = 500;
-        let expected_code = code.clone();
+        let expected_code = code;
 
         let message = String::from("internal error");
         let expected_message = message.clone();
@@ -661,7 +664,7 @@ mod tests {
         let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
         assert!(raw_response.is_ok());
         let response: ValidationResponse = serde_json::from_slice(&raw_response.unwrap()).unwrap();
-        assert_eq!(response.accepted, false);
+        assert!(!response.accepted);
         let error_message = response.message.unwrap_or_default();
         let expected_error_message = "Object should be one of these kinds: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod";
         assert_eq!(error_message, expected_error_message);

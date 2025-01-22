@@ -181,12 +181,12 @@ mod tests {
         .map(|l| {
             let digest = Digest::from_str(l.1).expect("parse digest");
             let size = u64::try_from(l.0).expect("parse size");
-            return DescriptorBuilder::default()
+            DescriptorBuilder::default()
                 .media_type(MediaType::ImageLayerGzip)
                 .size(size)
                 .digest(digest)
                 .build()
-                .expect("build manifest");
+                .expect("build manifest")
         })
         .collect();
 

@@ -194,7 +194,7 @@ mod tests {
         });
         let res = verify_pub_keys_image("image", vec!["key".to_string()], None);
 
-        assert_eq!(res.unwrap().is_trusted, true)
+        assert!(res.unwrap().is_trusted)
     }
 
     #[serial]
@@ -231,7 +231,7 @@ mod tests {
             None,
         );
 
-        assert_eq!(res.unwrap().is_trusted, true)
+        assert!(res.unwrap().is_trusted)
     }
 
     #[serial]
@@ -275,7 +275,7 @@ mod tests {
             None,
         );
 
-        assert_eq!(res.unwrap().is_trusted, true)
+        assert!(res.unwrap().is_trusted)
     }
 
     #[serial]
@@ -312,7 +312,7 @@ mod tests {
         });
         let res = verify_keyless_github_actions("image", "owner".to_string(), None, None);
 
-        assert_eq!(res.unwrap().is_trusted, true)
+        assert!(res.unwrap().is_trusted)
     }
 
     #[serial]
@@ -342,7 +342,7 @@ mod tests {
         });
         let res = verify_certificate("image", "CERT".to_string(), None, true, None);
 
-        assert_eq!(res.unwrap().is_trusted, true)
+        assert!(res.unwrap().is_trusted)
     }
 
     #[serial]
