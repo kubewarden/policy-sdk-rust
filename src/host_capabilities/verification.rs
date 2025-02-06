@@ -1,7 +1,7 @@
 use crate::host_capabilities::SigstoreVerificationInputV2;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 #[cfg(test)]
 use tests::mock_wapc as wapc_guest;
 
@@ -42,7 +42,7 @@ pub struct KeylessPrefixInfo {
 pub fn verify_pub_keys_image(
     image: &str,
     pub_keys: Vec<String>,
-    annotations: Option<HashMap<String, String>>,
+    annotations: Option<BTreeMap<String, String>>,
 ) -> Result<VerificationResponse> {
     let input = SigstoreVerificationInputV2::SigstorePubKeyVerify {
         image: image.to_string(),
@@ -61,7 +61,7 @@ pub fn verify_pub_keys_image(
 pub fn verify_keyless_exact_match(
     image: &str,
     keyless: Vec<KeylessInfo>,
-    annotations: Option<HashMap<String, String>>,
+    annotations: Option<BTreeMap<String, String>>,
 ) -> Result<VerificationResponse> {
     let input = SigstoreVerificationInputV2::SigstoreKeylessVerify {
         image: image.to_string(),
@@ -83,7 +83,7 @@ pub fn verify_keyless_exact_match(
 pub fn verify_keyless_prefix_match(
     image: &str,
     keyless_prefix: Vec<KeylessPrefixInfo>,
-    annotations: Option<HashMap<String, String>>,
+    annotations: Option<BTreeMap<String, String>>,
 ) -> Result<VerificationResponse> {
     let input = SigstoreVerificationInputV2::SigstoreKeylessPrefixVerify {
         image: image.to_string(),
@@ -105,7 +105,7 @@ pub fn verify_keyless_github_actions(
     image: &str,
     owner: String,
     repo: Option<String>,
-    annotations: Option<HashMap<String, String>>,
+    annotations: Option<BTreeMap<String, String>>,
 ) -> Result<VerificationResponse> {
     let input = SigstoreVerificationInputV2::SigstoreGithubActionsVerify {
         image: image.to_string(),
@@ -135,7 +135,7 @@ pub fn verify_certificate(
     certificate: String,
     certificate_chain: Option<Vec<String>>,
     require_rekor_bundle: bool,
-    annotations: Option<HashMap<String, String>>,
+    annotations: Option<BTreeMap<String, String>>,
 ) -> Result<VerificationResponse> {
     let chain: Option<Vec<Vec<u8>>> =
         certificate_chain.map(|c| c.iter().map(|cert| cert.as_bytes().to_vec()).collect());
