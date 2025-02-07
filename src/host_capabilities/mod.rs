@@ -1,6 +1,6 @@
 use crate::host_capabilities::verification::{KeylessInfo, KeylessPrefixInfo};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub mod crypto;
 #[cfg(feature = "cluster-context")]
@@ -21,7 +21,7 @@ pub enum SigstoreVerificationInputV1 {
         /// List of PEM encoded keys that must have been used to sign the OCI object
         pub_keys: Vec<String>,
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
-        annotations: Option<HashMap<String, String>>,
+        annotations: Option<BTreeMap<String, String>>,
     },
 
     /// Require the verification of the manifest digest of an OCI object to be
@@ -32,7 +32,7 @@ pub enum SigstoreVerificationInputV1 {
         /// List of keyless signatures that must be found
         keyless: Vec<KeylessInfo>,
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
-        annotations: Option<HashMap<String, String>>,
+        annotations: Option<BTreeMap<String, String>>,
     },
 }
 
@@ -50,7 +50,7 @@ pub enum SigstoreVerificationInputV2 {
         /// List of PEM encoded keys that must have been used to sign the OCI object
         pub_keys: Vec<String>,
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
-        annotations: Option<HashMap<String, String>>,
+        annotations: Option<BTreeMap<String, String>>,
     },
 
     /// Require the verification of the manifest digest of an OCI object to be
@@ -61,7 +61,7 @@ pub enum SigstoreVerificationInputV2 {
         /// List of keyless signatures that must be found
         keyless: Vec<KeylessInfo>,
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
-        annotations: Option<HashMap<String, String>>,
+        annotations: Option<BTreeMap<String, String>>,
     },
 
     /// Require the verification of the manifest digest of an OCI object to be
@@ -73,7 +73,7 @@ pub enum SigstoreVerificationInputV2 {
         /// List of keyless signatures that must be found
         keyless_prefix: Vec<KeylessPrefixInfo>,
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
-        annotations: Option<HashMap<String, String>>,
+        annotations: Option<BTreeMap<String, String>>,
     },
 
     /// Require the verification of the manifest digest of an OCI object to be
@@ -86,7 +86,7 @@ pub enum SigstoreVerificationInputV2 {
         /// Optional - Repo of the GH Action workflow that signed the artifact. E.g: example-repo
         repo: Option<String>,
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
-        annotations: Option<HashMap<String, String>>,
+        annotations: Option<BTreeMap<String, String>>,
     },
 
     /// Require the verification of the manifest digest of an OCI object
@@ -108,7 +108,7 @@ pub enum SigstoreVerificationInputV2 {
         /// verification process.
         require_rekor_bundle: bool,
         /// Optional - Annotations that must have been provided by all signers when they signed the OCI artifact
-        annotations: Option<HashMap<String, String>>,
+        annotations: Option<BTreeMap<String, String>>,
     },
 }
 
