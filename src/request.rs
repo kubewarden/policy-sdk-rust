@@ -162,6 +162,7 @@ where
         })
     }
 
+    #[cfg_attr(docsrs, doc(cfg(feature = "cluster-context")))]
     #[cfg(feature = "cluster-context")]
     /// Extract PodSpec from high level objects. This method can be used to evaluate high level objects instead of just Pods.
     /// For example, it can be used to reject Deployments or StatefulSets that violate a policy instead of the Pods created by them.

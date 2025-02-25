@@ -4,6 +4,10 @@ KUBE_API_VERSION?=1.31
 fmt:
 	K8S_OPENAPI_ENABLED_VERSION=$(KUBE_API_VERSION) cargo fmt --all -- --check
 
+.PHONY: doc
+doc:
+	RUSTDOCFLAGS="--cfg docsrs -D warnings" cargo +nightly doc --all-features --no-deps
+
 .PHONY: lint
 lint:
 	K8S_OPENAPI_ENABLED_VERSION=$(KUBE_API_VERSION) cargo clippy --all-features -- -D warnings

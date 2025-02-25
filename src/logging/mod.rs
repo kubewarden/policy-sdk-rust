@@ -11,7 +11,7 @@
 //!
 //! All the logs are sent to a [`slog::Logger`]. The logger then relies on a
 //! [`slog::Drain`] to manipulate and dispatch them. For Kubewarden policies,
-//! the drain must be an instance of [`KubewardenDrain`](crate::logging::KubewardenDrain).
+//! the drain must be an instance of [`KubewardenDrain`].
 //!
 //! Log events can be generated using the macros provided by the [`slog::log`]
 //! module.
