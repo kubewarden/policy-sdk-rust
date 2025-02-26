@@ -19,7 +19,7 @@ crd             = ["k8s-openapi-derive", "k8s-openapi/schemars", "schemars"]
 default         = ["cluster-context"]
 
 [package.metadata.docs.rs]
-features = ["k8s-openapi/v1_31"]
+features = ["cluster-context", "crd", "k8s-openapi/v1_31"]
 
 [dependencies]
 anyhow = "1.0"
