@@ -11,7 +11,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "kubewarden-policy-sdk"
 repository = "https://github.com/kubewarden/policy-sdk-rust"
-version = "0.13.1"
+version = "0.13.2"
 
 [features]
 cluster-context = ["k8s-openapi"]
@@ -19,7 +19,7 @@ crd             = ["k8s-openapi-derive", "k8s-openapi/schemars", "schemars"]
 default         = ["cluster-context"]
 
 [package.metadata.docs.rs]
-features = ["k8s-openapi/v1_31"]
+features = ["cluster-context", "crd", "k8s-openapi/v1_31"]
 
 [dependencies]
 anyhow = "1.0"
