@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 use std::collections::HashMap;
 
 use anyhow::anyhow;
@@ -19,7 +21,9 @@ use crate::metadata::ProtocolVersion;
 use crate::request::ValidationRequest;
 use crate::response::*;
 
+#[cfg_attr(docsrs, doc(cfg(feature = "crd")))]
 #[cfg(feature = "crd")]
+/// Rust types of Kubewarden CRDs
 pub mod crd;
 
 cfg_if::cfg_if! {
@@ -57,6 +61,7 @@ pub fn mutate_request(mutated_object: serde_json::Value) -> wapc_guest::CallResu
     })?)
 }
 
+#[cfg_attr(docsrs, doc(cfg(feature = "cluster-context")))]
 #[cfg(feature = "cluster-context")]
 /// Update the pod sec from the resource defined in the original object
 /// and create an acceptance response.

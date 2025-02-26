@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub mod crypto;
+#[cfg_attr(docsrs, doc(cfg(feature = "cluster-context")))]
 #[cfg(feature = "cluster-context")]
 pub mod kubernetes;
 pub mod net;
