@@ -122,13 +122,13 @@ pub fn verify_keyless_github_actions(
 /// * `image` -  image to be verified
 /// * `certificate` - PEM encoded certificate used to verify the signature
 /// * `certificate_chain` - Optional. PEM encoded certificates used to verify `certificate`.
-///    When not specified, the certificate is assumed to be trusted
+///   When not specified, the certificate is assumed to be trusted
 /// * `require_rekor_bundle` - require the  signature layer to have a Rekor bundle.
-///    Having a Rekor bundle allows further checks to be performed,
-///    like ensuring the signature has been produced during the validity
-///    time frame of the certificate.
-///    It is recommended to set this value to `true` to have a more secure
-///    verification process.
+///   Having a Rekor bundle allows further checks to be performed,
+///   like ensuring the signature has been produced during the validity
+///   time frame of the certificate.
+///   It is recommended to set this value to `true` to have a more secure
+///   verification process.
 /// * `annotations` - annotations that must have been provided by all signers when they signed the OCI artifact
 pub fn verify_certificate(
     image: &str,
