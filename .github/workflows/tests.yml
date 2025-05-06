@@ -22,9 +22,8 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - uses: actions-rs/cargo@844f36862e911db73fe0815f00a4a2602c279505 # v1.0.3
-        with:
-          command: check
+      - name: Run cargo check
+        run: cargo check
 
   test:
     name: Test Suite
@@ -37,14 +36,9 @@ jobs:
           toolchain: stable
           override: true
       - name: test with default features enabled
-        uses: actions-rs/cargo@844f36862e911db73fe0815f00a4a2602c279505 # v1.0.3
-        with:
-          command: test
+        run: cargo test
       - name: test with default features disabled
-        uses: actions-rs/cargo@844f36862e911db73fe0815f00a4a2602c279505 # v1.0.3
-        with:
-          command: test
-          args: --no-default-features
+        run: cargo test --no-default-features
 
   fmt:
     name: Rustfmt
@@ -57,10 +51,8 @@ jobs:
           toolchain: stable
           override: true
       - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@844f36862e911db73fe0815f00a4a2602c279505 # v1.0.3
-        with:
-          command: fmt
-          args: --all -- --check
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
 
   clippy:
     name: Clippy
@@ -73,10 +65,8 @@ jobs:
           toolchain: stable
           override: true
       - run: rustup component add clippy
-      - uses: actions-rs/cargo@844f36862e911db73fe0815f00a4a2602c279505 # v1.0.3
-        with:
-          command: clippy
-          args: -- -D warnings
+      - name: Run cargo clippy
+        run: cargo clippy -- -D warnings
 
   doc:
     name: Build Documentation
