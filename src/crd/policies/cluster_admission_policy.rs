@@ -131,6 +131,12 @@ pub struct ClusterAdmissionPolicySpec {
     /// the policy is assigned to.
     #[serde(default)]
     pub context_aware_resources: Vec<ContextAwareResource>,
+
+    // Message overrides the rejection message of the policy.
+    // When provided, the policy's rejection message can be found
+    // inside of the `.status.details.causes` field of the
+    // AdmissionResponse object
+    pub message: Option<String>,
 }
 
 #[cfg(test)]

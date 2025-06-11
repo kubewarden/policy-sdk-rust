@@ -119,6 +119,12 @@ pub struct AdmissionPolicySpec {
     /// The timeout value must be between 1 and 30 seconds.
     /// Default to 10 seconds.
     pub timeout_seconds: Option<TimeoutSeconds>,
+
+    // Message overrides the rejection message of the policy.
+    // When provided, the policy's rejection message can be found
+    // inside of the `.status.details.causes` field of the
+    // AdmissionResponse object
+    pub message: Option<String>,
 }
 
 #[cfg(test)]
