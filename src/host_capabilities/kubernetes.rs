@@ -124,9 +124,22 @@ where
     })
 }
 
+/// Describe the set of parameters used by the `get_resource` function.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SubjectAccessReviewRequest {
+    pub subject_access_review: SubjectAccessReview,
+    pub disable_cache: bool,
+}
 /// Check if user has permissions to perform an action on resources
-pub fn can_i(req: &SubjectAccessReview) -> Result<SubjectAccessReviewStatus> {
-    let msg = serde_json::to_vec(req)
+pub fn can_i(
+    subject_access_review: SubjectAccessReview,
+    disable_cache: bool,
+) -> Result<SubjectAccessReviewStatus> {
+    let request = SubjectAccessReviewRequest {
+        subject_access_review,
+        disable_cache,
+    };
+    let msg = serde_json::to_vec(&request)
         .map_err(|e| anyhow!("error serializing the can_i request: {:?}", e))?;
     let response_raw = wapc_guest::host_call("kubewarden", "kubernetes", "can_i", &msg)
         .map_err(|e| anyhow!("{}", e))?;
