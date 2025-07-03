@@ -35,7 +35,7 @@ impl TryFrom<Vec<u8>> for ProtocolVersion {
 impl fmt::Display for ProtocolVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let version = num::ToPrimitive::to_u64(self).ok_or(fmt::Error)?;
-        write!(f, "{}", version)
+        write!(f, "{version}")
     }
 }
 
@@ -46,10 +46,10 @@ mod tests {
     #[test]
     fn protocol_version_try_display() {
         let version = ProtocolVersion::V1;
-        assert_eq!("1", format!("{}", version));
+        assert_eq!("1", format!("{version}"));
 
         let version = ProtocolVersion::Unknown;
-        assert_eq!("0", format!("{}", version));
+        assert_eq!("0", format!("{version}"));
     }
 
     #[test]

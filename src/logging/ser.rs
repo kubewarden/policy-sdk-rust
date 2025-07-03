@@ -54,7 +54,7 @@ impl slog::Serializer for KubewardenFieldSerializer<'_> {
     emit_m!(emit_str, &str);
 
     fn emit_char(&mut self, key: Key, val: char) -> slog::Result {
-        self.data.insert(key.into(), format!("{}", val).into());
+        self.data.insert(key.into(), format!("{val}").into());
         Ok(())
     }
 
@@ -71,7 +71,7 @@ impl slog::Serializer for KubewardenFieldSerializer<'_> {
     }
 
     fn emit_arguments(&mut self, key: Key, val: &fmt::Arguments) -> slog::Result {
-        self.data.insert(key.into(), format!("{}", val).into());
+        self.data.insert(key.into(), format!("{val}").into());
         Ok(())
     }
 }

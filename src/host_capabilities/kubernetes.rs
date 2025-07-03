@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use k8s_openapi::api::authorization::v1::{SubjectAccessReview, SubjectAccessReviewStatus};
 use serde::{Deserialize, Serialize};
 
 /// Describe the set of parameters used by the `list_resources_by_namespace`
@@ -121,4 +122,15 @@ where
             e
         )
     })
+}
+
+/// Check if user has permissions to perform an action on resources
+pub fn can_i(req: &SubjectAccessReview) -> Result<SubjectAccessReviewStatus> {
+    let msg = serde_json::to_vec(req)
+        .map_err(|e| anyhow!("error serializing the can_i request: {:?}", e))?;
+    let response_raw = wapc_guest::host_call("kubewarden", "kubernetes", "can_i", &msg)
+        .map_err(|e| anyhow!("{}", e))?;
+
+    serde_json::from_slice(&response_raw)
+        .map_err(|e| anyhow!("error deserializing can_i response: {:?}", e))
 }
