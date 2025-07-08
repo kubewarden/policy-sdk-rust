@@ -124,13 +124,26 @@ where
     })
 }
 
-/// Describe the set of parameters used by the `get_resource` function.
+/// Describe the set of parameters used by the `can_i` function.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SubjectAccessReviewRequest {
+    /// The SubjectAccessReview object to be sent to the Kubernetes API Server. This object's spec
+    /// must be initialized with the details of the resource access being verified. The user
+    /// specified in the spec must match the user being validated by the policy. For example, to
+    /// validate a service account named my-user in the default namespace, the user field in the
+    /// spec should be set to system:serviceaccount:default:my-user.
+    /// This object is sent directly to the Kubernetes API Server. Therefore, its fields must
+    /// follow to the official Kubernetes documentation.
     pub subject_access_review: SubjectAccessReview,
+    /// Disable caching of results obtained from Kubernetes API Server
+    /// By default query results are cached for 5 seconds, that might cause
+    /// stale data to be returned.
+    /// However, making too many requests against the Kubernetes API Server
+    /// might cause issues to the cluster
     pub disable_cache: bool,
 }
-/// Check if user has permissions to perform an action on resources
+/// Check if user has permissions to perform an action on resources. This is done
+/// by sending a SubjectAccessReview to the Kubernetes authorization API.
 pub fn can_i(request: SubjectAccessReviewRequest) -> Result<SubjectAccessReviewStatus> {
     let msg = serde_json::to_vec(&request)
         .map_err(|e| anyhow!("error serializing the can_i request: {:?}", e))?;
