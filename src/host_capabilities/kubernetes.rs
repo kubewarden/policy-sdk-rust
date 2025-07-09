@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use k8s_openapi::api::authorization::v1::{SubjectAccessReview, SubjectAccessReviewStatus};
+use k8s_openapi::api::authorization::v1::SubjectAccessReviewStatus;
 use serde::{Deserialize, Serialize};
 
 /// Describe the set of parameters used by the `list_resources_by_namespace`
@@ -124,17 +124,28 @@ where
     })
 }
 
-/// Describe the set of parameters used by the `can_i` function.
+/// Describe the set of parameters used by the `can_i` function. The values in
+/// this struct will be used to build the SubjectAccessReview resources sent to
+/// the Kubernetes API to verify if the user is allowed to perform some operation
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SubjectAccessReviewRequest {
-    /// The SubjectAccessReview object to be sent to the Kubernetes API Server. This object's spec
-    /// must be initialized with the details of the resource access being verified. The user
-    /// specified in the spec must match the user being validated by the policy. For example, to
-    /// validate a service account named my-user in the default namespace, the user field in the
-    /// spec should be set to system:serviceaccount:default:my-user.
-    /// This object is sent directly to the Kubernetes API Server. Therefore, its fields must
-    /// follow to the official Kubernetes documentation.
-    pub subject_access_review: SubjectAccessReview,
+    /// User under test. The user should follow the partner
+    /// system:serviceaccount:<namespace>:<user>. For example, for the service account "my-user"
+    /// from the "default", the user should be: system:serviceaccount:default:my-user.
+    /// This is equivalent to the `user` field in the SubjectAccessReview.spec.
+    pub user: String,
+    /// Resource group under which the resource is defined. Equivalent of the
+    /// `group` field in the SubjectAccessReview.spec.resourceAttributes
+    pub group: String,
+    /// Namespace where the operation under test is being performed. Equivalent of the
+    /// `namespace` field in the SubjectAccessReview.spec.resourceAttributes
+    pub namespace: String,
+    /// Resource under which the operation is being performed. Equivalent of the `resource` field
+    /// in the SubjectAccessReview.spec.resourceAttributes
+    pub resource: String,
+    /// Verb that is being tested. Equivalent of the `verb` field in the
+    /// SubjectAccessReview.spec.resourceAttributes
+    pub verb: String,
     /// Disable caching of results obtained from Kubernetes API Server
     /// By default query results are cached for 5 seconds, that might cause
     /// stale data to be returned.
@@ -144,7 +155,7 @@ pub struct SubjectAccessReviewRequest {
 }
 /// Check if user has permissions to perform an action on resources. This is done
 /// by sending a SubjectAccessReview to the Kubernetes authorization API.
-pub fn can_i(request: SubjectAccessReviewRequest) -> Result<SubjectAccessReviewStatus> {
+pub fn can_i(request: &SubjectAccessReviewRequest) -> Result<SubjectAccessReviewStatus> {
     let msg = serde_json::to_vec(&request)
         .map_err(|e| anyhow!("error serializing the can_i request: {:?}", e))?;
     let response_raw = wapc_guest::host_call("kubewarden", "kubernetes", "can_i", &msg)
