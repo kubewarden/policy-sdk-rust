@@ -213,3 +213,47 @@ pub fn can_i(request: SubjectAccessReviewRequest) -> Result<SubjectAccessReviewS
     serde_json::from_slice(&response_raw)
         .map_err(|e| anyhow!("error deserializing can_i response: {:?}", e))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_subject_access_review_spec_conversion() {
+        let request = SubjectAccessReviewRequest {
+            groups: Some(vec!["group1".to_owned(), "group2".to_owned()]),
+            resource_attributes: ResourceAttributes {
+                group: Some("apps".to_owned()),
+                name: Some("my-deployment".to_owned()),
+                namespace: Some("default".to_owned()),
+                resource: "deployments".to_owned(),
+                subresource: Some("scale".to_owned()),
+                verb: "create".to_owned(),
+                version: Some("v1".to_owned()),
+            },
+            user: "my-user".to_owned(),
+            disable_cache: true,
+        };
+
+        assert_eq!(
+            SubjectAccessReviewSpec::from(request),
+            SubjectAccessReviewSpec {
+                user: Some("my-user".to_owned()),
+                groups: Some(vec!["group1".to_owned(), "group2".to_owned()]),
+                resource_attributes: Some(
+                    k8s_openapi::api::authorization::v1::ResourceAttributes {
+                        group: Some("apps".to_owned()),
+                        name: Some("my-deployment".to_owned()),
+                        namespace: Some("default".to_owned()),
+                        resource: Some("deployments".to_owned()),
+                        subresource: Some("scale".to_owned()),
+                        verb: Some("create".to_owned()),
+                        version: Some("v1".to_owned()),
+                        ..Default::default()
+                    }
+                ),
+                ..Default::default()
+            }
+        );
+    }
+}
