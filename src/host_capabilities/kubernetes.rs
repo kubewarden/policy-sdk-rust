@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use k8s_openapi::api::authorization::v1::SubjectAccessReviewStatus;
+use k8s_openapi::api::authorization::v1::{SubjectAccessReviewSpec, SubjectAccessReviewStatus};
 use serde::{Deserialize, Serialize};
 
 /// Describe the set of parameters used by the `list_resources_by_namespace`
@@ -124,28 +124,47 @@ where
     })
 }
 
+impl From<SubjectAccessReviewRequest> for SubjectAccessReviewSpec {
+    fn from(request: SubjectAccessReviewRequest) -> Self {
+        SubjectAccessReviewSpec {
+            user: Some(request.user),
+            groups: request.groups,
+            resource_attributes: Some(request.resource_attributes.into()),
+            ..Default::default()
+        }
+    }
+}
+
+impl From<ResourceAttributes> for k8s_openapi::api::authorization::v1::ResourceAttributes {
+    fn from(attrs: ResourceAttributes) -> Self {
+        k8s_openapi::api::authorization::v1::ResourceAttributes {
+            namespace: attrs.namespace,
+            verb: Some(attrs.verb),
+            group: attrs.group,
+            resource: Some(attrs.resource),
+            subresource: attrs.subresource,
+            name: attrs.name,
+            version: attrs.version,
+            ..Default::default()
+        }
+    }
+}
+
 /// Describe the set of parameters used by the `can_i` function. The values in
 /// this struct will be used to build the SubjectAccessReview resources sent to
 /// the Kubernetes API to verify if the user is allowed to perform some operation
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default, Hash, Clone)]
 pub struct SubjectAccessReviewRequest {
-    /// User under test. The user should follow the partner
-    /// system:serviceaccount:<namespace>:<user>. For example, for the service account "my-user"
-    /// from the "default", the user should be: system:serviceaccount:default:my-user.
-    /// This is equivalent to the `user` field in the SubjectAccessReview.spec.
+    /// The groups you're testing for.
+    pub groups: Option<Vec<String>>,
+
+    /// Information for a resource access request
+    pub resource_attributes: ResourceAttributes,
+
+    /// User is the user you're testing for. If you specify "User" but not "Groups", then is it
+    /// interpreted as "What if User were not a member of any groups
     pub user: String,
-    /// Resource group under which the resource is defined. Equivalent of the
-    /// `group` field in the SubjectAccessReview.spec.resourceAttributes
-    pub group: String,
-    /// Namespace where the operation under test is being performed. Equivalent of the
-    /// `namespace` field in the SubjectAccessReview.spec.resourceAttributes
-    pub namespace: String,
-    /// Resource under which the operation is being performed. Equivalent of the `resource` field
-    /// in the SubjectAccessReview.spec.resourceAttributes
-    pub resource: String,
-    /// Verb that is being tested. Equivalent of the `verb` field in the
-    /// SubjectAccessReview.spec.resourceAttributes
-    pub verb: String,
+
     /// Disable caching of results obtained from Kubernetes API Server
     /// By default query results are cached for 5 seconds, that might cause
     /// stale data to be returned.
@@ -153,9 +172,39 @@ pub struct SubjectAccessReviewRequest {
     /// might cause issues to the cluster
     pub disable_cache: bool,
 }
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default, Hash, Clone)]
+pub struct ResourceAttributes {
+    /// Group is the API Group of the Resource.  "*" means all.
+    pub group: Option<String>,
+
+    /// Name is the name of the resource being requested for a "get" or deleted for a "delete". ""
+    /// (empty) means all.
+    pub name: Option<String>,
+
+    /// Namespace is the namespace of the action being requested.  Currently, there is no
+    /// distinction between no namespace and all namespaces.
+    /// - "" (empty) is empty for cluster-scoped resources
+    /// - "" (empty) means "all" for namespace scoped resources
+    pub namespace: Option<String>,
+
+    /// Resource is one of the existing resource types.  "*" means all.
+    pub resource: String,
+
+    /// Subresource is one of the existing resource types.  "" means none.
+    pub subresource: Option<String>,
+
+    /// Verb is a kubernetes resource API verb, like: get, list, watch, create, update, delete,
+    /// proxy.  "*" means all.
+    pub verb: String,
+
+    /// Version is the API Version of the Resource.  "*" means all.
+    pub version: Option<std::string::String>,
+}
+
 /// Check if user has permissions to perform an action on resources. This is done
 /// by sending a SubjectAccessReview to the Kubernetes authorization API.
-pub fn can_i(request: &SubjectAccessReviewRequest) -> Result<SubjectAccessReviewStatus> {
+pub fn can_i(request: SubjectAccessReviewRequest) -> Result<SubjectAccessReviewStatus> {
     let msg = serde_json::to_vec(&request)
         .map_err(|e| anyhow!("error serializing the can_i request: {:?}", e))?;
     let response_raw = wapc_guest::host_call("kubewarden", "kubernetes", "can_i", &msg)
