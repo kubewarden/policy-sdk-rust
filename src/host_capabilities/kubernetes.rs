@@ -124,8 +124,8 @@ where
     })
 }
 
-impl From<SubjectAccessReviewRequest> for SubjectAccessReviewSpec {
-    fn from(request: SubjectAccessReviewRequest) -> Self {
+impl From<SubjectAccessReview> for SubjectAccessReviewSpec {
+    fn from(request: SubjectAccessReview) -> Self {
         SubjectAccessReviewSpec {
             user: Some(request.user),
             groups: request.groups,
@@ -150,11 +150,23 @@ impl From<ResourceAttributes> for k8s_openapi::api::authorization::v1::ResourceA
     }
 }
 
-/// Describe the set of parameters used by the `can_i` function. The values in
-/// this struct will be used to build the SubjectAccessReview resources sent to
-/// the Kubernetes API to verify if the user is allowed to perform some operation
+/// Describe the set of parameters used by the `can_i` function.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CanIRequest {
+    /// The values in this struct will be used to build the SubjectAccessReview resources sent to the
+    /// Kubernetes API to verify if the user is allowed to perform some operation
+    pub subject_access_review: SubjectAccessReview,
+
+    /// Disable caching of results obtained from Kubernetes API Server
+    /// By default query results are cached for 5 seconds, that might cause
+    /// stale data to be returned.
+    /// However, making too many requests against the Kubernetes API Server
+    /// might cause issues to the cluster
+    pub disable_cache: bool,
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default, Hash, Clone)]
-pub struct SubjectAccessReviewRequest {
+pub struct SubjectAccessReview {
     /// The groups you're testing for.
     pub groups: Option<Vec<String>>,
 
@@ -164,13 +176,6 @@ pub struct SubjectAccessReviewRequest {
     /// User is the user you're testing for. If you specify "User" but not "Groups", then is it
     /// interpreted as "What if User were not a member of any groups
     pub user: String,
-
-    /// Disable caching of results obtained from Kubernetes API Server
-    /// By default query results are cached for 5 seconds, that might cause
-    /// stale data to be returned.
-    /// However, making too many requests against the Kubernetes API Server
-    /// might cause issues to the cluster
-    pub disable_cache: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default, Hash, Clone)]
@@ -204,7 +209,7 @@ pub struct ResourceAttributes {
 
 /// Check if user has permissions to perform an action on resources. This is done
 /// by sending a SubjectAccessReview to the Kubernetes authorization API.
-pub fn can_i(request: SubjectAccessReviewRequest) -> Result<SubjectAccessReviewStatus> {
+pub fn can_i(request: CanIRequest) -> Result<SubjectAccessReviewStatus> {
     let msg = serde_json::to_vec(&request)
         .map_err(|e| anyhow!("error serializing the can_i request: {:?}", e))?;
     let response_raw = wapc_guest::host_call("kubewarden", "kubernetes", "can_i", &msg)
@@ -220,7 +225,7 @@ mod tests {
 
     #[test]
     fn test_subject_access_review_spec_conversion() {
-        let request = SubjectAccessReviewRequest {
+        let request = SubjectAccessReview {
             groups: Some(vec!["group1".to_owned(), "group2".to_owned()]),
             resource_attributes: ResourceAttributes {
                 group: Some("apps".to_owned()),
@@ -232,7 +237,6 @@ mod tests {
                 version: Some("v1".to_owned()),
             },
             user: "my-user".to_owned(),
-            disable_cache: true,
         };
 
         assert_eq!(
