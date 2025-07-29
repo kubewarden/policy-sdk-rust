@@ -5,6 +5,7 @@ use k8s_openapi::apimachinery::pkg::runtime::RawExtension;
 #[derive(
     Clone, Default, Debug, serde::Deserialize, serde::Serialize, PartialEq, schemars::JsonSchema,
 )]
+#[serde(rename_all = "camelCase")]
 pub enum PolicyMode {
     #[default]
     Protect,
