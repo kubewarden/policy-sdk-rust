@@ -1,8 +1,11 @@
+use std::fmt;
+
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
+
 use crate::host_capabilities::crypto_v1::{
     CertificateVerificationRequest, CertificateVerificationResponse,
 };
-use anyhow::{anyhow, Result};
-use serde::{Deserialize, Serialize};
 
 /// A x509 certificate
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
@@ -11,6 +14,26 @@ pub struct Certificate {
     pub encoding: CertificateEncoding,
     /// Actual certificate
     pub data: Vec<u8>,
+}
+
+impl fmt::Display for Certificate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let encoding = match self.encoding {
+            CertificateEncoding::Der => "DER",
+            CertificateEncoding::Pem => "PEM",
+        };
+
+        let human_data = match self.encoding {
+            CertificateEncoding::Pem => String::from_utf8_lossy(&self.data).to_string(),
+            CertificateEncoding::Der => format!("(HEX) {:?}", hex::encode_upper(&self.data)),
+        };
+
+        write!(
+            f,
+            "Certificate(encoding: {}, data: {:?})",
+            encoding, human_data
+        )
+    }
 }
 
 /// The encoding of the certificate
@@ -30,7 +53,7 @@ pub enum CertificateEncoding {
 }
 
 /// Used as return of verify_cert()
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum BoolWithReason {
     True,
     False(String),
