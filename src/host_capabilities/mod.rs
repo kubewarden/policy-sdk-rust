@@ -119,7 +119,7 @@ pub mod crypto_v1 {
 
     /// CertificateVerificationRequest holds information about a certificate and
     /// a chain to validate it with.
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
     pub struct CertificateVerificationRequest {
         /// PEM-encoded certificate
         pub cert: Certificate,

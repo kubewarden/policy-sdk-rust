@@ -13,7 +13,7 @@ impl KubewardenLogSerializer {
         })
     }
 
-    pub fn field_serializer(&mut self) -> KubewardenFieldSerializer {
+    pub fn field_serializer(&mut self) -> KubewardenFieldSerializer<'_> {
         KubewardenFieldSerializer {
             data: &mut self.data,
         }
