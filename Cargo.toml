@@ -41,13 +41,13 @@ cfg-if = "1.0"
 # inside of the `dev-dependencies`, this time with a k8s feature enabled
 chrono             = { version = "0.4", default-features = false }
 hex                = "0.4"
-k8s-openapi        = { version = "0.25.0", default-features = false, optional = true }
-k8s-openapi-derive = { version = "0.25.0", optional = true }
+k8s-openapi        = { version = "0.26.0", default-features = false, optional = true }
+k8s-openapi-derive = { version = "0.26.0", optional = true }
 num                = "0.4"
 num-derive         = "0.4"
 num-traits         = "0.2"
 oci-spec           = "0.8.0"
-schemars           = { version = "0.8", features = ["impl_json_schema"], optional = true }
+schemars           = { version = "1.0", optional = true }
 serde              = { version = "1.0", features = ["derive"] }
 serde_json         = "1.0"
 serde_yaml         = "0.9.34"
@@ -58,7 +58,7 @@ wapc-guest         = "1.1.0"
 [dev-dependencies]
 assert-json-diff = "2.0.2"
 jsonpath_lib = "0.3.0"
-k8s-openapi = { version = "0.25.0", default-features = false, features = [
+k8s-openapi = { version = "0.26.0", default-features = false, features = [
   "v1_33",
 ] }
 mockall = "0.13.0"
