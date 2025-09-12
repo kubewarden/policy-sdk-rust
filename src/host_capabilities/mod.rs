@@ -170,7 +170,7 @@ pub mod crypto_v1 {
         }
     }
 
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
     pub struct CertificateVerificationResponse {
         pub trusted: bool,
         /// empty when trusted is true
