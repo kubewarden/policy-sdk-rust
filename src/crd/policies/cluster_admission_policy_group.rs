@@ -34,6 +34,12 @@ pub struct PolicyGroupMemberWithContext {
     /// the policy is assigned to.
     #[serde(default)]
     pub context_aware_resources: Vec<ContextAwareResource>,
+
+    // TimeoutEvalSeconds specifies the timeout for the policy evaluation. After
+    // the timeout passes, the policy evaluation call will fail based on the
+    // failure policy.
+    // The timeout value must be between 1 and 30 seconds.
+    pub timeout_eval_seconds: Option<TimeoutSeconds>,
 }
 
 #[derive(
