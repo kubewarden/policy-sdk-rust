@@ -76,6 +76,24 @@ impl Default for TimeoutSeconds {
     }
 }
 
+impl From<i32> for TimeoutSeconds {
+    fn from(timeout: i32) -> Self {
+        TimeoutSeconds(timeout)
+    }
+}
+
+impl From<TimeoutSeconds> for i32 {
+    fn from(timeout: TimeoutSeconds) -> Self {
+        timeout.0
+    }
+}
+
+impl From<&TimeoutSeconds> for i32 {
+    fn from(timeout: &TimeoutSeconds) -> Self {
+        timeout.0
+    }
+}
+
 pub(crate) fn default_policy_server() -> String {
     "default".to_string()
 }
