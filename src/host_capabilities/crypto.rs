@@ -79,7 +79,7 @@ impl From<BoolWithReason> for CertificateVerificationResponse {
 /// Accepts 3 arguments:
 /// * cert: PEM-encoded certificate to verify.
 /// * cert_chain: list of PEM-encoded certs, ordered by trust usage
-///   (intermediates first, root last). If empty, certificate is assumed trusted.
+///   (intermediates first, root last). If empty, the Mozilla's CA is used.
 /// * not_after: string in RFC 3339 time format, to check expiration against.
 ///   If None, certificate is assumed never expired.
 pub fn verify_cert(
