@@ -120,6 +120,12 @@ pub struct ClusterAdmissionPolicySpec {
     /// Default to 10 seconds.
     pub timeout_seconds: Option<TimeoutSeconds>,
 
+    // TimeoutEvalSeconds specifies the timeout for the policy evaluation. After
+    // the timeout passes, the policy evaluation call will fail based on the
+    // failure policy.
+    // The timeout value must be between 1 and 30 seconds.
+    pub timeout_eval_seconds: Option<TimeoutSeconds>,
+
     /// NamespaceSelector decides whether to run the webhook on an object based on whether the namespace
     /// for that object matches the selector. If the object itself is a namespace, the matching is
     /// performed on object.metadata.labels.
