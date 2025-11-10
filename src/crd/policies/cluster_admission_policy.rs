@@ -6,8 +6,8 @@ use k8s_openapi::{
 };
 
 use crate::crd::policies::common::{
-    default_policy_server, default_settings, BackgroundAudit, ContextAwareResource, FailurePolicy,
-    MatchPolicy, PolicyMode, SideEffects, TimeoutSeconds,
+    BackgroundAudit, ContextAwareResource, FailurePolicy, MatchPolicy, PolicyMode, SideEffects,
+    TimeoutSeconds, default_policy_server, default_settings,
 };
 
 #[derive(

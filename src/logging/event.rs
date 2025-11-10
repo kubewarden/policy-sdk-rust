@@ -1,5 +1,5 @@
 use anyhow::Result;
-use slog::{OwnedKVList, KV};
+use slog::{KV, OwnedKVList};
 
 use super::ser::KubewardenLogSerializer;
 use serde_json::json;

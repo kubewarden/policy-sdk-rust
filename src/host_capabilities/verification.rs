@@ -1,5 +1,5 @@
 use crate::host_capabilities::SigstoreVerificationInputV2;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 #[cfg(test)]

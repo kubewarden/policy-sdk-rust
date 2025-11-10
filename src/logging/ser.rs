@@ -79,7 +79,7 @@ impl slog::Serializer for KubewardenFieldSerializer<'_> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use slog::{o, Record, KV};
+    use slog::{KV, Record, o};
 
     fn do_serializer<S: slog::Serializer>(serializer: &mut S) {
         // rinfo_static and the values passed to Record::new are irrelevant for this test and

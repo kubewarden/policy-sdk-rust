@@ -6,8 +6,8 @@ use k8s_openapi::{
 };
 
 use crate::crd::policies::common::{
-    default_policy_server, default_settings, BackgroundAudit, FailurePolicy, MatchPolicy,
-    PolicyMode, SideEffects, TimeoutSeconds,
+    BackgroundAudit, FailurePolicy, MatchPolicy, PolicyMode, SideEffects, TimeoutSeconds,
+    default_policy_server, default_settings,
 };
 
 #[derive(
@@ -259,8 +259,9 @@ spec:
 "#;
 
         let err = serde_yaml::from_str::<AdmissionPolicy>(yaml).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("unknown field `contextAwareResources`"));
+        assert!(
+            err.to_string()
+                .contains("unknown field `contextAwareResources`")
+        );
     }
 }
