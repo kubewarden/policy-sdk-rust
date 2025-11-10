@@ -1,5 +1,5 @@
 use crate::response::ValidationResponse;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::json;
 use std::fs::File;
 use std::io::BufReader;

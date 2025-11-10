@@ -7,7 +7,7 @@ authors = [
 ]
 description = "Kubewarden Policy SDK for the Rust language"
 documentation = "https://docs.rs/kubewarden-policy-sdk"
-edition = "2021"
+edition = "2024"
 license = "Apache-2.0"
 name = "kubewarden-policy-sdk"
 repository = "https://github.com/kubewarden/policy-sdk-rust"

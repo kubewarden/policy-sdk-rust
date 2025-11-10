@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::collections::{HashMap, HashSet};
 
 cfg_if::cfg_if! {
@@ -173,38 +173,46 @@ where
             Deployment::KIND => {
                 let deployment = serde_json::from_value::<Deployment>(self.request.object.clone())?;
                 Ok(deployment.spec.and_then(|spec| spec.template.spec))
-            },
+            }
             ReplicaSet::KIND => {
                 let replicaset = serde_json::from_value::<ReplicaSet>(self.request.object.clone())?;
-                Ok(replicaset.spec.and_then(|spec| spec.template.and_then(|template| template.spec)))
-            },
+                Ok(replicaset
+                    .spec
+                    .and_then(|spec| spec.template.and_then(|template| template.spec)))
+            }
             StatefulSet::KIND => {
-                let statefulset = serde_json::from_value::<StatefulSet>(self.request.object.clone())?;
+                let statefulset =
+                    serde_json::from_value::<StatefulSet>(self.request.object.clone())?;
                 Ok(statefulset.spec.and_then(|spec| spec.template.spec))
-            },
+            }
             DaemonSet::KIND => {
                 let daemonset = serde_json::from_value::<DaemonSet>(self.request.object.clone())?;
                 Ok(daemonset.spec.and_then(|spec| spec.template.spec))
-            },
+            }
             ReplicationController::KIND => {
-                let replication_controller = serde_json::from_value::<ReplicationController>(self.request.object.clone())?;
-                Ok(replication_controller.spec.and_then(|spec| spec.template.and_then(|template| template.spec)))
-            },
+                let replication_controller =
+                    serde_json::from_value::<ReplicationController>(self.request.object.clone())?;
+                Ok(replication_controller
+                    .spec
+                    .and_then(|spec| spec.template.and_then(|template| template.spec)))
+            }
             CronJob::KIND => {
                 let cronjob = serde_json::from_value::<CronJob>(self.request.object.clone())?;
-                Ok(cronjob.spec.and_then(|spec| spec.job_template.spec.and_then(|spec| spec.template.spec)))
-            },
+                Ok(cronjob
+                    .spec
+                    .and_then(|spec| spec.job_template.spec.and_then(|spec| spec.template.spec)))
+            }
             Job::KIND => {
                 let job = serde_json::from_value::<Job>(self.request.object.clone())?;
                 Ok(job.spec.and_then(|spec| spec.template.spec))
-            },
+            }
             Pod::KIND => {
                 let pod = serde_json::from_value::<Pod>(self.request.object.clone())?;
                 Ok(pod.spec)
-            },
-            _ => {
-                Err(anyhow!("Object should be one of these kinds: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod"))
             }
+            _ => Err(anyhow!(
+                "Object should be one of these kinds: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod"
+            )),
         }
     }
 }

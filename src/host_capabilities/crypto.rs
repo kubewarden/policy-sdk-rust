@@ -1,6 +1,6 @@
 use std::fmt;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 
 use crate::host_capabilities::crypto_v1::{

@@ -8,8 +8,8 @@ use k8s_openapi::{
 };
 
 use crate::crd::policies::common::{
-    default_policy_server, default_settings, BackgroundAudit, ContextAwareResource, FailurePolicy,
-    MatchPolicy, PolicyMode, SideEffects, TimeoutSeconds,
+    BackgroundAudit, ContextAwareResource, FailurePolicy, MatchPolicy, PolicyMode, SideEffects,
+    TimeoutSeconds, default_policy_server, default_settings,
 };
 
 #[derive(
@@ -258,6 +258,7 @@ spec:
                     ]
                 })),
                 context_aware_resources: vec![],
+                ..Default::default()
             },
         );
         policies.insert(
@@ -274,6 +275,7 @@ spec:
                     ]
                 })),
                 context_aware_resources: vec![],
+                ..Default::default()
             },
         );
         policies.insert(
@@ -286,6 +288,7 @@ spec:
                     }
                 })),
                 context_aware_resources: vec![],
+                ..Default::default()
             },
         );
 
@@ -300,6 +303,7 @@ spec:
                 module: "ghcr.io/kubewarden/policies/verify-image-signatures:v0.3.0".to_string(),
                 settings: RawExtension(serde_json::json!({})),
                 context_aware_resources: vec![],
+                ..Default::default()
             },
         );
         policies.insert(
@@ -308,6 +312,7 @@ spec:
                 module: "ghcr.io/kubewarden/policies/verify-image-signatures:v0.3.0".to_string(),
                 settings: RawExtension(serde_json::json!({})),
                 context_aware_resources: vec![],
+                ..Default::default()
             },
         );
         policies.insert(
@@ -316,6 +321,7 @@ spec:
                 module: "registry://ghcr.io/kubewarden/policies/trusted-repos:v0.2.0".to_string(),
                 settings: RawExtension(serde_json::json!({})),
                 context_aware_resources: vec![],
+                ..Default::default()
             },
         );
 

@@ -237,7 +237,7 @@ where
 /// use guest::prelude::*;
 /// use kubewarden_policy_sdk::protocol_version_guest;
 ///
-/// #[no_mangle]
+/// #[unsafe(no_mangle)]
 /// pub extern "C" fn wapc_init() {
 ///     register_function("protocol_version", protocol_version_guest);
 ///     // register other waPC functions

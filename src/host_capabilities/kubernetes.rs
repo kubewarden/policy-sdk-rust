@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use k8s_openapi::api::authorization::v1::{SubjectAccessReviewSpec, SubjectAccessReviewStatus};
 use serde::{Deserialize, Serialize};
 

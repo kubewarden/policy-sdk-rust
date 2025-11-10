@@ -8,8 +8,8 @@ use k8s_openapi::{
 };
 
 use crate::crd::policies::common::{
-    default_policy_server, default_settings, BackgroundAudit, FailurePolicy, MatchPolicy,
-    PolicyMode, SideEffects, TimeoutSeconds,
+    BackgroundAudit, FailurePolicy, MatchPolicy, PolicyMode, SideEffects, TimeoutSeconds,
+    default_policy_server, default_settings,
 };
 
 #[derive(
@@ -238,6 +238,7 @@ spec:
                         }
                     ]
                 })),
+                ..Default::default()
             },
         );
         policies.insert(
@@ -253,6 +254,7 @@ spec:
                         }
                     ]
                 })),
+                ..Default::default()
             },
         );
         policies.insert(
@@ -264,6 +266,7 @@ spec:
                         "reject": ["latest"]
                     }
                 })),
+                ..Default::default()
             },
         );
 
@@ -277,6 +280,7 @@ spec:
             PolicyGroupMember {
                 module: "ghcr.io/kubewarden/policies/verify-image-signatures:v0.3.0".to_string(),
                 settings: RawExtension(serde_json::json!({})),
+                ..Default::default()
             },
         );
         policies.insert(
@@ -284,6 +288,7 @@ spec:
             PolicyGroupMember {
                 module: "ghcr.io/kubewarden/policies/verify-image-signatures:v0.3.0".to_string(),
                 settings: RawExtension(serde_json::json!({})),
+                ..Default::default()
             },
         );
         policies.insert(
@@ -291,6 +296,7 @@ spec:
             PolicyGroupMember {
                 module: "registry://ghcr.io/kubewarden/policies/trusted-repos:v0.2.0".to_string(),
                 settings: RawExtension(serde_json::json!({})),
+                ..Default::default()
             },
         );
 
@@ -349,9 +355,10 @@ spec:
 "#;
 
         let err = serde_yaml::from_str::<AdmissionPolicyGroup>(yaml).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("unknown field `namespaceSelector`"),);
+        assert!(
+            err.to_string()
+                .contains("unknown field `namespaceSelector`"),
+        );
     }
 
     #[test]
