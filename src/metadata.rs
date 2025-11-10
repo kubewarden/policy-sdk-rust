@@ -7,19 +7,16 @@ use std::{convert::TryFrom, fmt};
 ///
 /// Policies built with this SDK provide the right value via the `protocol_version_guest`
 /// function.
-#[derive(Deserialize, Serialize, Debug, Clone, FromPrimitive, ToPrimitive, PartialEq, Eq)]
+#[derive(
+    Deserialize, Serialize, Debug, Clone, FromPrimitive, ToPrimitive, PartialEq, Eq, Default,
+)]
 pub enum ProtocolVersion {
     /// This is an invalid version
     #[serde(rename = "Unknown")]
     Unknown = 0,
     #[serde(rename = "v1")]
+    #[default]
     V1,
-}
-
-impl Default for ProtocolVersion {
-    fn default() -> Self {
-        Self::V1
-    }
 }
 
 impl TryFrom<Vec<u8>> for ProtocolVersion {
