@@ -37,6 +37,8 @@ jobs:
         run: cargo test
       - name: test with default features disabled
         run: cargo test --no-default-features
+      - name: test with all features enabled
+        run: cargo test --all-features
 
   fmt:
     name: Rustfmt
