@@ -61,5 +61,5 @@ jsonpath_lib = "0.3.0"
 k8s-openapi = { version = "0.26.0", default-features = false, features = [
   "v1_33",
 ] }
-mockall = "0.13"
+mockall = "0.14"
 serial_test = "3.2"
