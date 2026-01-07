@@ -26,3 +26,7 @@ test: fmt lint
 .PHONY: clean
 clean:
 	cargo clean
+
+.PHONY: advisories
+advisories:
+	cargo deny check advisories
