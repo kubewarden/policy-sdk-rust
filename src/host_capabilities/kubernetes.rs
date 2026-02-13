@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use anyhow::{Result, anyhow};
 use k8s_openapi::api::authorization::v1::{SubjectAccessReviewSpec, SubjectAccessReviewStatus};
 use serde::{Deserialize, Serialize};
@@ -18,6 +20,28 @@ pub struct ListResourcesByNamespaceRequest {
     /// A selector to restrict the list of returned objects by their fields.
     /// Defaults to everything if `None`
     pub field_selector: Option<String>,
+    /// A list of fields to include in the response.
+    ///
+    /// If strictly defined, the host will prune the Kubernetes resource to contain *only*
+    /// the specified fields, reducing memory usage and serialization overhead.
+    ///
+    /// # Behavior
+    /// - **Dot Notation:** Use `.` to traverse nested objects (e.g., `metadata.name`).
+    /// - **Implicit Arrays:** Paths automatically traverse through arrays. A path like
+    ///   `spec.containers.image` will include the `image` field for *every* item in the
+    ///   `spec.containers` list.
+    /// - **Allow-List:** Fields not specified in the mask are discarded. If the list is
+    ///   empty or `None`, the full resource is returned.
+    ///
+    /// # Example
+    /// ```json
+    /// [
+    ///   "metadata.name",
+    ///   "metadata.namespace",
+    ///   "spec.containers.image"
+    /// ]
+    /// ```
+    pub field_masks: Option<BTreeSet<String>>,
 }
 
 /// Get all the Kubernetes resources defined inside of the given
@@ -64,6 +88,28 @@ pub struct ListAllResourcesRequest {
     /// A selector to restrict the list of returned objects by their fields.
     /// Defaults to everything if `None`
     pub field_selector: Option<String>,
+    /// A list of fields to include in the response.
+    ///
+    /// If strictly defined, the host will prune the Kubernetes resource to contain *only*
+    /// the specified fields, reducing memory usage and serialization overhead.
+    ///
+    /// # Behavior
+    /// - **Dot Notation:** Use `.` to traverse nested objects (e.g., `metadata.name`).
+    /// - **Implicit Arrays:** Paths automatically traverse through arrays. A path like
+    ///   `spec.containers.image` will include the `image` field for *every* item in the
+    ///   `spec.containers` list.
+    /// - **Allow-List:** Fields not specified in the mask are discarded. If the list is
+    ///   empty or `None`, the full resource is returned.
+    ///
+    /// # Example
+    /// ```json
+    /// [
+    ///   "metadata.name",
+    ///   "metadata.namespace",
+    ///   "spec.containers.image"
+    /// ]
+    /// ```
+    pub field_masks: Option<BTreeSet<String>>,
 }
 
 /// Get all the Kubernetes resources defined inside of the cluster.
@@ -104,6 +150,28 @@ pub struct GetResourceRequest {
     /// However, making too many requests against the Kubernetes API Server
     /// might cause issues to the cluster
     pub disable_cache: bool,
+    /// A list of fields to include in the response.
+    ///
+    /// If strictly defined, the host will prune the Kubernetes resource to contain *only*
+    /// the specified fields, reducing memory usage and serialization overhead.
+    ///
+    /// # Behavior
+    /// - **Dot Notation:** Use `.` to traverse nested objects (e.g., `metadata.name`).
+    /// - **Implicit Arrays:** Paths automatically traverse through arrays. A path like
+    ///   `spec.containers.image` will include the `image` field for *every* item in the
+    ///   `spec.containers` list.
+    /// - **Allow-List:** Fields not specified in the mask are discarded. If the list is
+    ///   empty or `None`, the full resource is returned.
+    ///
+    /// # Example
+    /// ```json
+    /// [
+    ///   "metadata.name",
+    ///   "metadata.namespace",
+    ///   "spec.containers.image"
+    /// ]
+    /// ```
+    pub field_masks: Option<BTreeSet<String>>,
 }
 
 /// Get a specific Kubernetes resource.
