@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use crate::error::{Error, Result};
 use oci_spec::image::{ImageConfiguration, ImageIndex, ImageManifest};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -35,10 +35,15 @@ pub struct OciManifestAndConfigResponse {
 /// Computes the digest of the OCI object referenced by `image`
 pub fn get_manifest_digest(image: &str) -> Result<ManifestDigestResponse> {
     let req = json!(image);
-    let msg = serde_json::to_vec(&req)
-        .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
+    let msg = serde_json::to_vec(&req).map_err(|e| Error::Serialization {
+        context: "manifest digest request".to_string(),
+        source: e,
+    })?;
     let response_raw = wapc_guest::host_call("kubewarden", "oci", "v1/manifest_digest", &msg)
-        .map_err(|e| anyhow!("error invoking wapc oci.manifest_digest: {:?}", e))?;
+        .map_err(|e| Error::HostCall {
+            operation: "oci.manifest_digest".to_string(),
+            source: e,
+        })?;
 
     let response: ManifestDigestResponse = serde_json::from_slice(&response_raw)?;
 
@@ -48,10 +53,15 @@ pub fn get_manifest_digest(image: &str) -> Result<ManifestDigestResponse> {
 /// Fetches OCI manifest referenced by `image`
 pub fn get_manifest(image: &str) -> Result<OciManifestResponse> {
     let req = json!(image);
-    let msg = serde_json::to_vec(&req)
-        .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
+    let msg = serde_json::to_vec(&req).map_err(|e| Error::Serialization {
+        context: "OCI manifest request".to_string(),
+        source: e,
+    })?;
     let response_raw = wapc_guest::host_call("kubewarden", "oci", "v1/oci_manifest", &msg)
-        .map_err(|e| anyhow!("error invoking wapc oci.manifest_digest: {:?}", e))?;
+        .map_err(|e| Error::HostCall {
+            operation: "oci.oci_manifest".to_string(),
+            source: e,
+        })?;
     let response: OciManifestResponse = serde_json::from_slice(&response_raw)?;
     Ok(response)
 }
@@ -59,11 +69,15 @@ pub fn get_manifest(image: &str) -> Result<OciManifestResponse> {
 /// Fetches OCI image manifest and configuration referenced by `image`
 pub fn get_manifest_and_config(image: &str) -> Result<OciManifestAndConfigResponse> {
     let req = json!(image);
-    let msg = serde_json::to_vec(&req)
-        .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
-    let response_raw =
-        wapc_guest::host_call("kubewarden", "oci", "v1/oci_manifest_config", &msg)
-            .map_err(|e| anyhow!("error invoking wapc oci.manifest_and_config: {:?}", e))?;
+    let msg = serde_json::to_vec(&req).map_err(|e| Error::Serialization {
+        context: "OCI manifest and config request".to_string(),
+        source: e,
+    })?;
+    let response_raw = wapc_guest::host_call("kubewarden", "oci", "v1/oci_manifest_config", &msg)
+        .map_err(|e| Error::HostCall {
+        operation: "oci.oci_manifest_config".to_string(),
+        source: e,
+    })?;
 
     let response: OciManifestAndConfigResponse = serde_json::from_slice(&response_raw)?;
 

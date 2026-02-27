@@ -2,6 +2,8 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, fmt};
 
+use crate::error::Error;
+
 /// ProtocolVersion describes the version of the communication protocol
 /// used to exchange information between the policy and the policy evaluator.
 ///
@@ -20,11 +22,14 @@ pub enum ProtocolVersion {
 }
 
 impl TryFrom<Vec<u8>> for ProtocolVersion {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let version: ProtocolVersion = serde_json::from_slice(&value)
-            .map_err(|e| anyhow::anyhow!("Cannot convert value to ProtocolVersion: {:?}", e))?;
+        let version: ProtocolVersion =
+            serde_json::from_slice(&value).map_err(|e| Error::Deserialization {
+                context: "ProtocolVersion".to_string(),
+                source: e,
+            })?;
         Ok(version)
     }
 }

@@ -22,8 +22,8 @@ default         = ["cluster-context"]
 features = ["cluster-context", "crd", "k8s-openapi/v1_32"]
 
 [dependencies]
-anyhow = "1.0"
-cfg-if = "1.0"
+cfg-if    = "1.0"
+thiserror = "2.0"
 # Starting from k8s-openapi v0.14, it is NOT recommended to be explicit about
 # the kubernetes features to be used when building a library. That's because
 # the final version of the k8s API to be supported must be made by the consumer

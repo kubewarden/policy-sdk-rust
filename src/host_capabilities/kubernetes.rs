@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use anyhow::{Result, anyhow};
+use crate::error::{Error, Result};
 use k8s_openapi::api::authorization::v1::{SubjectAccessReviewSpec, SubjectAccessReviewStatus};
 use serde::{Deserialize, Serialize};
 
@@ -53,11 +53,9 @@ pub fn list_resources_by_namespace<T>(
 where
     T: k8s_openapi::ListableResource + serde::de::DeserializeOwned + Clone,
 {
-    let msg = serde_json::to_vec(req).map_err(|e| {
-        anyhow!(
-            "error serializing the list resources by namespace request: {}",
-            e
-        )
+    let msg = serde_json::to_vec(req).map_err(|e| Error::Serialization {
+        context: "list resources by namespace request".to_string(),
+        source: e,
     })?;
     let response_raw = wapc_guest::host_call(
         "kubewarden",
@@ -65,13 +63,14 @@ where
         "list_resources_by_namespace",
         &msg,
     )
-    .map_err(|e| anyhow!("{}", e))?;
+    .map_err(|e| Error::HostCall {
+        operation: "kubernetes.list_resources_by_namespace".to_string(),
+        source: e,
+    })?;
 
-    serde_json::from_slice(&response_raw).map_err(|e| {
-        anyhow!(
-            "error deserializing list resources by namespace response into Kubernetes resource: {:?}",
-            e
-        )
+    serde_json::from_slice(&response_raw).map_err(|e| Error::Deserialization {
+        context: "list resources by namespace response".to_string(),
+        source: e,
     })
 }
 
@@ -118,17 +117,21 @@ pub fn list_all_resources<T>(req: &ListAllResourcesRequest) -> Result<k8s_openap
 where
     T: k8s_openapi::ListableResource + serde::de::DeserializeOwned + Clone,
 {
-    let msg = serde_json::to_vec(req)
-        .map_err(|e| anyhow!("error serializing the list all resources request: {}", e))?;
+    let msg = serde_json::to_vec(req).map_err(|e| Error::Serialization {
+        context: "list all resources request".to_string(),
+        source: e,
+    })?;
     let response_raw =
-        wapc_guest::host_call("kubewarden", "kubernetes", "list_resources_all", &msg)
-            .map_err(|e| anyhow!("{}", e))?;
+        wapc_guest::host_call("kubewarden", "kubernetes", "list_resources_all", &msg).map_err(
+            |e| Error::HostCall {
+                operation: "kubernetes.list_resources_all".to_string(),
+                source: e,
+            },
+        )?;
 
-    serde_json::from_slice(&response_raw).map_err(|e| {
-        anyhow!(
-            "error deserializing list all resources response into Kubernetes resource: {:?}",
-            e
-        )
+    serde_json::from_slice(&response_raw).map_err(|e| Error::Deserialization {
+        context: "list all resources response".to_string(),
+        source: e,
     })
 }
 
@@ -179,16 +182,19 @@ pub fn get_resource<T>(req: &GetResourceRequest) -> Result<T>
 where
     T: serde::de::DeserializeOwned + Clone,
 {
-    let msg = serde_json::to_vec(req)
-        .map_err(|e| anyhow!("error serializing the get resource request: {}", e))?;
+    let msg = serde_json::to_vec(req).map_err(|e| Error::Serialization {
+        context: "get resource request".to_string(),
+        source: e,
+    })?;
     let response_raw = wapc_guest::host_call("kubewarden", "kubernetes", "get_resource", &msg)
-        .map_err(|e| anyhow!("{}", e))?;
+        .map_err(|e| Error::HostCall {
+            operation: "kubernetes.get_resource".to_string(),
+            source: e,
+        })?;
 
-    serde_json::from_slice(&response_raw).map_err(|e| {
-        anyhow!(
-            "error deserializing get resource response into Kubernetes resource: {:?}",
-            e
-        )
+    serde_json::from_slice(&response_raw).map_err(|e| Error::Deserialization {
+        context: "get resource response".to_string(),
+        source: e,
     })
 }
 
@@ -278,13 +284,22 @@ pub struct ResourceAttributes {
 /// Check if user has permissions to perform an action on resources. This is done
 /// by sending a SubjectAccessReview to the Kubernetes authorization API.
 pub fn can_i(request: CanIRequest) -> Result<SubjectAccessReviewStatus> {
-    let msg = serde_json::to_vec(&request)
-        .map_err(|e| anyhow!("error serializing the can_i request: {:?}", e))?;
-    let response_raw = wapc_guest::host_call("kubewarden", "kubernetes", "can_i", &msg)
-        .map_err(|e| anyhow!("{}", e))?;
+    let msg = serde_json::to_vec(&request).map_err(|e| Error::Serialization {
+        context: "can_i request".to_string(),
+        source: e,
+    })?;
+    let response_raw =
+        wapc_guest::host_call("kubewarden", "kubernetes", "can_i", &msg).map_err(|e| {
+            Error::HostCall {
+                operation: "kubernetes.can_i".to_string(),
+                source: e,
+            }
+        })?;
 
-    serde_json::from_slice(&response_raw)
-        .map_err(|e| anyhow!("error deserializing can_i response: {:?}", e))
+    serde_json::from_slice(&response_raw).map_err(|e| Error::Deserialization {
+        context: "can_i response".to_string(),
+        source: e,
+    })
 }
 
 #[cfg(test)]

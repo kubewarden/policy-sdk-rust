@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::collections::{HashMap, HashSet};
 
@@ -152,13 +152,12 @@ where
 {
     /// Crates a new `ValidationRequest` starting from the payload provided
     /// to the policy at invocation time.
-    pub fn new(payload: &[u8]) -> anyhow::Result<Self> {
+    pub fn new(payload: &[u8]) -> Result<Self> {
         serde_json::from_slice::<ValidationRequest<T>>(payload).map_err(|e| {
-            anyhow!(
-                "Error decoding validation payload {}: {:?}",
-                String::from_utf8_lossy(payload),
-                e
-            )
+            Error::Deserialization {
+                context: format!("validation payload {}", String::from_utf8_lossy(payload)),
+                source: e,
+            }
         })
     }
 
@@ -168,7 +167,7 @@ where
     /// For example, it can be used to reject Deployments or StatefulSets that violate a policy instead of the Pods created by them.
     /// Objects supported are: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod
     /// It returns an error if the object is not one of those. If it is a supported object it returns the PodSpec if present, otherwise returns None.
-    pub fn extract_pod_spec_from_object(&self) -> anyhow::Result<Option<PodSpec>> {
+    pub fn extract_pod_spec_from_object(&self) -> Result<Option<PodSpec>> {
         match self.request.kind.kind.as_str() {
             Deployment::KIND => {
                 let deployment = serde_json::from_value::<Deployment>(self.request.object.clone())?;
@@ -210,8 +209,8 @@ where
                 let pod = serde_json::from_value::<Pod>(self.request.object.clone())?;
                 Ok(pod.spec)
             }
-            _ => Err(anyhow!(
-                "Object should be one of these kinds: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod"
+            _ => Err(Error::Validation(
+                "Object should be one of these kinds: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod".to_string()
             )),
         }
     }
