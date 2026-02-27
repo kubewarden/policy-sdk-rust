@@ -8,7 +8,7 @@ use tests::mock_wapc as wapc_guest;
 /// VerificationResponse holds the response of a sigstore signatures verification
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct VerificationResponse {
-    /// true if the image is trusted, which means verification was successfull
+    /// true if the image is trusted, which means verification was successful
     pub is_trusted: bool,
     /// digest of the image that was verified
     pub digest: String,

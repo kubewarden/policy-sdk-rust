@@ -298,7 +298,7 @@ mod tests {
             })
             .returning(|_, _, _, _| Ok(serde_json::to_vec(&create_oci_image_manifest()).unwrap()));
         let response = get_manifest("ghcr.io/kubewarden/policy-server:latest")
-            .expect("failed to get oci manifest reponse");
+            .expect("failed to get oci manifest response");
         match response {
             OciManifestResponse::Image(image) => {
                 assert_eq!(*image, create_oci_image_manifest());
@@ -325,7 +325,7 @@ mod tests {
                 Ok(serde_json::to_vec(&create_oci_index_image_manifest()).unwrap())
             });
         let response = get_manifest("ghcr.io/kubewarden/policy-server:latest")
-            .expect("failed to get oci manifest reponse");
+            .expect("failed to get oci manifest response");
         match response {
             OciManifestResponse::Image(_) => panic!("Invalid oci manifest type returned"),
             OciManifestResponse::ImageIndex(image) => {
@@ -358,7 +358,7 @@ mod tests {
                 Ok(response_raw)
             });
         let response = get_manifest_and_config("ghcr.io/kubewarden/policy-server:latest")
-            .expect("failed to get oci manifest reponse");
+            .expect("failed to get oci manifest response");
         assert_eq!(response.config, create_oci_image_configuration());
         assert_eq!(response.manifest, create_oci_image_manifest());
         assert_eq!(response.digest, "sha256:983");

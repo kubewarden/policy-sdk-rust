@@ -293,8 +293,8 @@ mod tests {
         });
         let expected_object = mutated_object.clone();
 
-        let reponse_raw = mutate_request(mutated_object).unwrap();
-        let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
+        let response_raw = mutate_request(mutated_object).unwrap();
+        let response: ValidationResponse = serde_json::from_slice(&response_raw).unwrap();
 
         assert_json_eq!(response.mutated_object, expected_object);
 
@@ -303,8 +303,8 @@ mod tests {
 
     #[test]
     fn test_accept_request() -> std::result::Result<(), ()> {
-        let reponse_raw = accept_request().unwrap();
-        let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
+        let response_raw = accept_request().unwrap();
+        let response: ValidationResponse = serde_json::from_slice(&response_raw).unwrap();
 
         assert!(response.mutated_object.is_none());
         assert!(response.audit_annotations.is_none());
@@ -328,14 +328,14 @@ mod tests {
             String::from("image-blacklisted"),
         );
 
-        let reponse_raw = reject_request(
+        let response_raw = reject_request(
             Some(message),
             Some(code),
             Some(audit_annotations.clone()),
             Some(warnings.clone()),
         )
         .unwrap();
-        let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
+        let response: ValidationResponse = serde_json::from_slice(&response_raw).unwrap();
 
         assert!(response.mutated_object.is_none());
         assert_eq!(response.code, Some(expected_code));
@@ -347,8 +347,8 @@ mod tests {
 
     #[test]
     fn try_protocol_version_guest() -> std::result::Result<(), ()> {
-        let reponse = protocol_version_guest(&[0; 0]).unwrap();
-        let version: ProtocolVersion = serde_json::from_slice(&reponse).unwrap();
+        let response = protocol_version_guest(&[0; 0]).unwrap();
+        let version: ProtocolVersion = serde_json::from_slice(&response).unwrap();
 
         assert_eq!(version, ProtocolVersion::V1);
         Ok(())
