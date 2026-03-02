@@ -24,6 +24,15 @@ jobs:
       - name: Run cargo check
         run: cargo check
 
+  spelling:
+    name: Spelling check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Check spelling with typos
+        uses: crate-ci/typos@57b11c6b7e54c402ccd9cda953f1072ec4f78e33 # v1.43.5
+
   test:
     name: Test Suite
     runs-on: ubuntu-latest

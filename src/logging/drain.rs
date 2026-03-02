@@ -1,4 +1,4 @@
-use anyhow::Result;
+use crate::error::{Error, Result};
 use slog::{Drain, OwnedKVList, Record};
 
 use super::event;
@@ -40,7 +40,7 @@ impl KubewardenDrain {
 
 impl slog::Drain for KubewardenDrain {
     type Ok = ();
-    type Err = anyhow::Error;
+    type Err = Error;
 
     #[cfg(not(target_arch = "wasm32"))]
     fn log(&self, rinfo: &Record, logger_values: &OwnedKVList) -> Result<()> {
@@ -56,6 +56,9 @@ impl slog::Drain for KubewardenDrain {
         let msg = serde_json::to_vec(&event).unwrap();
         wapc_guest::host_call("kubewarden", "tracing", "log", &msg)
             .map(|_| ())
-            .map_err(|e| anyhow::anyhow!("erorr invoking wapc logging facility: {:?}", e))
+            .map_err(|e| Error::HostCall {
+                operation: "tracing.log".to_string(),
+                source: e,
+            })
     }
 }

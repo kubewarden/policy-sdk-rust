@@ -1,5 +1,5 @@
+use crate::error::{Error, Result};
 use crate::host_capabilities::SigstoreVerificationInputV2;
-use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 #[cfg(test)]
@@ -8,7 +8,7 @@ use tests::mock_wapc as wapc_guest;
 /// VerificationResponse holds the response of a sigstore signatures verification
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct VerificationResponse {
-    /// true if the image is trusted, which means verification was successfull
+    /// true if the image is trusted, which means verification was successful
     pub is_trusted: bool,
     /// digest of the image that was verified
     pub digest: String,
@@ -151,10 +151,17 @@ pub fn verify_certificate(
     verify(input)
 }
 fn verify(input: SigstoreVerificationInputV2) -> Result<VerificationResponse> {
-    let msg = serde_json::to_vec(&input)
-        .map_err(|e| anyhow!("error serializing the validation request: {}", e))?;
-    let response_raw = wapc_guest::host_call("kubewarden", "oci", "v2/verify", &msg)
-        .map_err(|e| anyhow!("{}", e))?;
+    let msg = serde_json::to_vec(&input).map_err(|e| Error::Serialization {
+        context: "sigstore verification request".to_string(),
+        source: e,
+    })?;
+    let response_raw =
+        wapc_guest::host_call("kubewarden", "oci", "v2/verify", &msg).map_err(|e| {
+            Error::HostCall {
+                operation: "oci.verify".to_string(),
+                source: e,
+            }
+        })?;
 
     let response: VerificationResponse = serde_json::from_slice(&response_raw)?;
 

@@ -2,10 +2,9 @@
 
 use std::collections::HashMap;
 
-use anyhow::anyhow;
-
 pub use wapc_guest;
 
+pub mod error;
 pub mod host_capabilities;
 pub mod logging;
 pub mod metadata;
@@ -16,6 +15,7 @@ pub mod response;
 pub mod settings;
 pub mod test;
 
+pub use crate::error::{Error, Result};
 use crate::metadata::ProtocolVersion;
 #[cfg(feature = "cluster-context")]
 use crate::request::ValidationRequest;
@@ -207,12 +207,9 @@ pub fn validate_settings<T>(payload: &[u8]) -> wapc_guest::CallResult
 where
     T: serde::de::DeserializeOwned + settings::Validatable,
 {
-    let settings: T = serde_json::from_slice::<T>(payload).map_err(|e| {
-        anyhow!(
-            "Error decoding validation payload {}: {:?}",
-            String::from_utf8_lossy(payload),
-            e
-        )
+    let settings: T = serde_json::from_slice::<T>(payload).map_err(|e| Error::Deserialization {
+        context: format!("validation payload {}", String::from_utf8_lossy(payload)),
+        source: e,
     })?;
 
     let res = match settings.validate() {
@@ -272,7 +269,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mutate_request() -> Result<(), ()> {
+    fn test_mutate_request() -> std::result::Result<(), ()> {
         let mutated_object = json!({
             "apiVersion": "v1",
             "kind": "Pod",
@@ -296,8 +293,8 @@ mod tests {
         });
         let expected_object = mutated_object.clone();
 
-        let reponse_raw = mutate_request(mutated_object).unwrap();
-        let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
+        let response_raw = mutate_request(mutated_object).unwrap();
+        let response: ValidationResponse = serde_json::from_slice(&response_raw).unwrap();
 
         assert_json_eq!(response.mutated_object, expected_object);
 
@@ -305,9 +302,9 @@ mod tests {
     }
 
     #[test]
-    fn test_accept_request() -> Result<(), ()> {
-        let reponse_raw = accept_request().unwrap();
-        let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
+    fn test_accept_request() -> std::result::Result<(), ()> {
+        let response_raw = accept_request().unwrap();
+        let response: ValidationResponse = serde_json::from_slice(&response_raw).unwrap();
 
         assert!(response.mutated_object.is_none());
         assert!(response.audit_annotations.is_none());
@@ -316,7 +313,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reject_request() -> Result<(), ()> {
+    fn test_reject_request() -> std::result::Result<(), ()> {
         let code = 500;
         let expected_code = code;
 
@@ -331,14 +328,14 @@ mod tests {
             String::from("image-blacklisted"),
         );
 
-        let reponse_raw = reject_request(
+        let response_raw = reject_request(
             Some(message),
             Some(code),
             Some(audit_annotations.clone()),
             Some(warnings.clone()),
         )
         .unwrap();
-        let response: ValidationResponse = serde_json::from_slice(&reponse_raw).unwrap();
+        let response: ValidationResponse = serde_json::from_slice(&response_raw).unwrap();
 
         assert!(response.mutated_object.is_none());
         assert_eq!(response.code, Some(expected_code));
@@ -349,9 +346,9 @@ mod tests {
     }
 
     #[test]
-    fn try_protocol_version_guest() -> Result<(), ()> {
-        let reponse = protocol_version_guest(&[0; 0]).unwrap();
-        let version: ProtocolVersion = serde_json::from_slice(&reponse).unwrap();
+    fn try_protocol_version_guest() -> std::result::Result<(), ()> {
+        let response = protocol_version_guest(&[0; 0]).unwrap();
+        let version: ProtocolVersion = serde_json::from_slice(&response).unwrap();
 
         assert_eq!(version, ProtocolVersion::V1);
         Ok(())
@@ -375,8 +372,8 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     fn check_if_automount_service_account_token_is_true(
-        raw_response: Result<Vec<u8>, Box<dyn StdError + Send + Sync>>,
-    ) -> Result<(), ()> {
+        raw_response: std::result::Result<Vec<u8>, Box<dyn StdError + Send + Sync>>,
+    ) -> std::result::Result<(), ()> {
         assert!(raw_response.is_ok());
         let response: ValidationResponse = serde_json::from_slice(&raw_response.unwrap()).unwrap();
         assert!(response.accepted);
@@ -401,7 +398,7 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     #[test]
-    fn test_mutate_pod_spec_from_request_with_deployment() -> Result<(), ()> {
+    fn test_mutate_pod_spec_from_request_with_deployment() -> std::result::Result<(), ()> {
         let deployment = Deployment {
             spec: Some(DeploymentSpec {
                 template: PodTemplateSpec {
@@ -428,7 +425,7 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     #[test]
-    fn test_mutate_pod_spec_from_request_with_replicaset() -> Result<(), ()> {
+    fn test_mutate_pod_spec_from_request_with_replicaset() -> std::result::Result<(), ()> {
         let replicaset = ReplicaSet {
             spec: Some(ReplicaSetSpec {
                 template: Some(PodTemplateSpec {
@@ -455,7 +452,7 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     #[test]
-    fn test_mutate_pod_spec_from_request_with_statefulset() -> Result<(), ()> {
+    fn test_mutate_pod_spec_from_request_with_statefulset() -> std::result::Result<(), ()> {
         let statefulset = StatefulSet {
             spec: Some(StatefulSetSpec {
                 template: PodTemplateSpec {
@@ -481,7 +478,7 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     #[test]
-    fn test_mutate_pod_spec_from_request_with_daemonset() -> Result<(), ()> {
+    fn test_mutate_pod_spec_from_request_with_daemonset() -> std::result::Result<(), ()> {
         let daemonset = DaemonSet {
             spec: Some(DaemonSetSpec {
                 template: PodTemplateSpec {
@@ -507,7 +504,8 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     #[test]
-    fn test_mutate_pod_spec_from_request_with_replicationcontroller() -> Result<(), ()> {
+    fn test_mutate_pod_spec_from_request_with_replicationcontroller() -> std::result::Result<(), ()>
+    {
         let replicationcontroller = ReplicationController {
             spec: Some(ReplicationControllerSpec {
                 template: Some(PodTemplateSpec {
@@ -534,7 +532,7 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     #[test]
-    fn test_mutate_pod_spec_from_request_with_cronjob() -> Result<(), ()> {
+    fn test_mutate_pod_spec_from_request_with_cronjob() -> std::result::Result<(), ()> {
         let cronjob = CronJob {
             spec: Some(CronJobSpec {
                 job_template: JobTemplateSpec {
@@ -586,7 +584,7 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     #[test]
-    fn test_mutate_pod_spec_from_request_with_job() -> Result<(), ()> {
+    fn test_mutate_pod_spec_from_request_with_job() -> std::result::Result<(), ()> {
         let job = Job {
             spec: Some(JobSpec {
                 template: PodTemplateSpec {
@@ -612,7 +610,7 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     #[test]
-    fn test_mutate_pod_spec_from_request_with_pod() -> Result<(), ()> {
+    fn test_mutate_pod_spec_from_request_with_pod() -> std::result::Result<(), ()> {
         let pod = Pod {
             spec: Some(PodSpec {
                 automount_service_account_token: Some(false),
@@ -652,7 +650,8 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     #[test]
-    fn test_mutate_pod_spec_from_request_with_invalid_resource_type() -> Result<(), ()> {
+    fn test_mutate_pod_spec_from_request_with_invalid_resource_type() -> std::result::Result<(), ()>
+    {
         let pod = Pod {
             spec: Some(PodSpec {
                 ..Default::default()

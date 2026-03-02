@@ -1,4 +1,4 @@
-use anyhow::Result;
+use crate::error::Result;
 use slog::{KV, OwnedKVList};
 
 use super::ser::KubewardenLogSerializer;

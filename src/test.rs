@@ -1,11 +1,15 @@
+use crate::error::{Error, Result};
 use crate::response::ValidationResponse;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::json;
 use std::fs::File;
 use std::io::BufReader;
 
-fn read_request_file(path: &str) -> anyhow::Result<serde_json::Value> {
-    let file = File::open(path)?;
+fn read_request_file(path: &str) -> Result<serde_json::Value> {
+    let file = File::open(path).map_err(|e| Error::Io {
+        path: path.to_string(),
+        source: e,
+    })?;
     let reader = BufReader::new(file);
 
     let v = serde_json::from_reader(reader)?;
@@ -44,7 +48,7 @@ impl<T> Testcase<T>
 where
     T: DeserializeOwned + Serialize,
 {
-    pub fn eval(&self, validate: ValidateFn) -> anyhow::Result<ValidationResponse> {
+    pub fn eval(&self, validate: ValidateFn) -> Result<ValidationResponse> {
         let payload = make_validate_payload(self.fixture_file.as_str(), &self.settings);
         let raw_result = validate(payload.as_bytes()).unwrap();
         let response: ValidationResponse = serde_json::from_slice(&raw_result)?;

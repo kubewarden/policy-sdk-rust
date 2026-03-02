@@ -1,6 +1,6 @@
 use std::fmt;
 
-use anyhow::{Result, anyhow};
+use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::host_capabilities::crypto_v1::{
@@ -92,15 +92,17 @@ pub fn verify_cert(
         cert_chain,
         not_after,
     };
-    let msg = serde_json::to_vec(&req).map_err(|e| {
-        anyhow!(
-            "error serializing the certificate verification request: {}",
-            e
-        )
+    let msg = serde_json::to_vec(&req).map_err(|e| Error::Serialization {
+        context: "certificate verification request".to_string(),
+        source: e,
     })?;
     let response_raw =
-        wapc_guest::host_call("kubewarden", "crypto", "v1/is_certificate_trusted", &msg)
-            .map_err(|e| anyhow!("{}", e))?;
+        wapc_guest::host_call("kubewarden", "crypto", "v1/is_certificate_trusted", &msg).map_err(
+            |e| Error::HostCall {
+                operation: "crypto.is_certificate_trusted".to_string(),
+                source: e,
+            },
+        )?;
 
     let response: CertificateVerificationResponse = serde_json::from_slice(&response_raw)?;
     match response.trusted {
