@@ -18,7 +18,7 @@ pub mod test;
 pub use crate::error::{Error, Result};
 use crate::metadata::ProtocolVersion;
 #[cfg(feature = "cluster-context")]
-use crate::request::ValidationRequest;
+use crate::request::{is_resource, supported_pod_spec_objects_message, ValidationRequest};
 use crate::response::*;
 
 #[cfg_attr(docsrs, doc(cfg(feature = "crd")))]
@@ -31,7 +31,6 @@ cfg_if::cfg_if! {
         use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, ReplicaSet, StatefulSet};
         use k8s_openapi::api::batch::v1::{CronJob, Job};
         use k8s_openapi::api::core::v1::{Pod, PodSpec, ReplicationController};
-        use k8s_openapi::Resource;
     }
 }
 
@@ -63,7 +62,7 @@ pub fn mutate_request(mutated_object: serde_json::Value) -> wapc_guest::CallResu
 
 #[cfg_attr(docsrs, doc(cfg(feature = "cluster-context")))]
 #[cfg(feature = "cluster-context")]
-/// Update the pod sec from the resource defined in the original object
+/// Update the pod spec from the resource defined in the original object
 /// and create an acceptance response.
 /// # Arguments
 /// * `validation_request` - the original admission request
@@ -72,8 +71,9 @@ pub fn mutate_pod_spec_from_request<T: std::default::Default>(
     validation_request: ValidationRequest<T>,
     pod_spec: PodSpec,
 ) -> wapc_guest::CallResult {
-    match validation_request.request.kind.kind.as_str() {
-        Deployment::KIND => {
+    let gvk = &validation_request.request.kind;
+    match () {
+        _ if is_resource::<Deployment>(gvk) => {
             let mut deployment =
                 serde_json::from_value::<Deployment>(validation_request.request.object.clone())?;
             let mut deployment_spec = deployment.spec.unwrap_or_default();
@@ -81,7 +81,7 @@ pub fn mutate_pod_spec_from_request<T: std::default::Default>(
             deployment.spec = Some(deployment_spec);
             mutate_request(serde_json::to_value(deployment)?)
         }
-        ReplicaSet::KIND => {
+        _ if is_resource::<ReplicaSet>(gvk) => {
             let mut replicaset =
                 serde_json::from_value::<ReplicaSet>(validation_request.request.object.clone())?;
             let mut replicaset_spec = replicaset.spec.unwrap_or_default();
@@ -91,7 +91,7 @@ pub fn mutate_pod_spec_from_request<T: std::default::Default>(
             replicaset.spec = Some(replicaset_spec);
             mutate_request(serde_json::to_value(replicaset)?)
         }
-        StatefulSet::KIND => {
+        _ if is_resource::<StatefulSet>(gvk) => {
             let mut statefulset =
                 serde_json::from_value::<StatefulSet>(validation_request.request.object.clone())?;
             let mut statefulset_spec = statefulset.spec.unwrap_or_default();
@@ -99,7 +99,7 @@ pub fn mutate_pod_spec_from_request<T: std::default::Default>(
             statefulset.spec = Some(statefulset_spec);
             mutate_request(serde_json::to_value(statefulset)?)
         }
-        DaemonSet::KIND => {
+        _ if is_resource::<DaemonSet>(gvk) => {
             let mut daemonset =
                 serde_json::from_value::<DaemonSet>(validation_request.request.object.clone())?;
             let mut daemonset_spec = daemonset.spec.unwrap_or_default();
@@ -107,7 +107,7 @@ pub fn mutate_pod_spec_from_request<T: std::default::Default>(
             daemonset.spec = Some(daemonset_spec);
             mutate_request(serde_json::to_value(daemonset)?)
         }
-        ReplicationController::KIND => {
+        _ if is_resource::<ReplicationController>(gvk) => {
             let mut replication_controller = serde_json::from_value::<ReplicationController>(
                 validation_request.request.object.clone(),
             )?;
@@ -118,7 +118,7 @@ pub fn mutate_pod_spec_from_request<T: std::default::Default>(
             replication_controller.spec = Some(replication_controller_spec);
             mutate_request(serde_json::to_value(replication_controller)?)
         }
-        CronJob::KIND => {
+        _ if is_resource::<CronJob>(gvk) => {
             let mut cronjob =
                 serde_json::from_value::<CronJob>(validation_request.request.object.clone())?;
             let mut cronjob_spec = cronjob.spec.unwrap_or_default();
@@ -132,21 +132,19 @@ pub fn mutate_pod_spec_from_request<T: std::default::Default>(
             cronjob.spec = Some(cronjob_spec);
             mutate_request(serde_json::to_value(cronjob)?)
         }
-        Job::KIND => {
+        _ if is_resource::<Job>(gvk) => {
             let mut job = serde_json::from_value::<Job>(validation_request.request.object.clone())?;
             let mut job_spec = job.spec.unwrap_or_default();
             job_spec.template.spec = Some(pod_spec);
             job.spec = Some(job_spec);
             mutate_request(serde_json::to_value(job)?)
         }
-        Pod::KIND => {
+        _ if is_resource::<Pod>(gvk) => {
             let mut pod = serde_json::from_value::<Pod>(validation_request.request.object.clone())?;
             pod.spec = Some(pod_spec);
             mutate_request(serde_json::to_value(pod)?)
         }
-        _ => {
-            reject_request(Some("Object should be one of these kinds: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod".to_string()), None, None, None)
-        }
+        _ => reject_request(Some(supported_pod_spec_objects_message()), None, None, None),
     }
 }
 
@@ -356,17 +354,39 @@ mod tests {
 
     #[cfg(feature = "cluster-context")]
     fn create_validation_request<T: Serialize>(object: T, kind: &str) -> ValidationRequest<()> {
+        let (group, version) = group_version_for_kind(kind);
+        create_validation_request_with_gvk(object, group, version, kind)
+    }
+
+    #[cfg(feature = "cluster-context")]
+    fn create_validation_request_with_gvk<T: Serialize>(
+        object: T,
+        group: &str,
+        version: &str,
+        kind: &str,
+    ) -> ValidationRequest<()> {
         let value = serde_json::to_value(object).unwrap();
         ValidationRequest {
             settings: (),
             request: KubernetesAdmissionRequest {
                 kind: GroupVersionKind {
-                    kind: kind.to_string(),
-                    ..Default::default()
+                    group: group.to_owned(),
+                    version: version.to_owned(),
+                    kind: kind.to_owned(),
                 },
                 object: value,
                 ..Default::default()
             },
+        }
+    }
+
+    #[cfg(feature = "cluster-context")]
+    fn group_version_for_kind(kind: &str) -> (&'static str, &'static str) {
+        match kind {
+            "Deployment" | "ReplicaSet" | "StatefulSet" | "DaemonSet" => ("apps", "v1"),
+            "CronJob" | "Job" => ("batch", "v1"),
+            "ReplicationController" | "Pod" => ("", "v1"),
+            _ => ("", ""),
         }
     }
 
@@ -670,9 +690,44 @@ mod tests {
         let response: ValidationResponse = serde_json::from_slice(&raw_response.unwrap()).unwrap();
         assert!(!response.accepted);
         let error_message = response.message.unwrap_or_default();
-        let expected_error_message = "Object should be one of these kinds: Deployment, ReplicaSet, StatefulSet, DaemonSet, ReplicationController, Job, CronJob, Pod";
+        let expected_error_message = crate::request::supported_pod_spec_objects_message();
         assert_eq!(error_message, expected_error_message);
 
         Ok(())
+    }
+
+    #[cfg(feature = "cluster-context")]
+    #[test]
+    fn test_mutate_pod_spec_from_request_rejects_mismatched_group_version_kind() {
+        let deployment = Deployment {
+            spec: Some(DeploymentSpec {
+                template: PodTemplateSpec {
+                    spec: Some(PodSpec {
+                        automount_service_account_token: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let validation_request =
+            create_validation_request_with_gvk(deployment, "argocd.io", "v1", "Deployment");
+
+        let new_pod_spec = PodSpec {
+            automount_service_account_token: Some(true),
+            ..Default::default()
+        };
+
+        let raw_response = mutate_pod_spec_from_request(validation_request, new_pod_spec);
+
+        assert!(raw_response.is_ok());
+        let response: ValidationResponse = serde_json::from_slice(&raw_response.unwrap()).unwrap();
+        assert!(!response.accepted);
+        assert_eq!(
+            response.message.unwrap_or_default(),
+            crate::request::supported_pod_spec_objects_message()
+        );
     }
 }
