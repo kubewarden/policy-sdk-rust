@@ -18,7 +18,7 @@ pub mod test;
 pub use crate::error::{Error, Result};
 use crate::metadata::ProtocolVersion;
 #[cfg(feature = "cluster-context")]
-use crate::request::{is_resource, supported_pod_spec_objects_message, ValidationRequest};
+use crate::request::{ValidationRequest, is_resource, supported_pod_spec_objects_message};
 use crate::response::*;
 
 #[cfg_attr(docsrs, doc(cfg(feature = "crd")))]
