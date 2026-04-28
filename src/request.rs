@@ -29,13 +29,49 @@ pub(crate) fn supported_pod_spec_objects_message() -> String {
 }
 
 #[cfg(feature = "cluster-context")]
-pub(crate) fn supported_pod_spec_objects_error() -> String {
-    format!("object should be one of these group/version/kinds: {SUPPORTED_POD_SPEC_OBJECTS}")
-}
-
-#[cfg(feature = "cluster-context")]
 pub(crate) fn is_resource<T: Resource>(gvk: &GroupVersionKind) -> bool {
     gvk.group == T::GROUP && gvk.version == T::VERSION && gvk.kind == T::KIND
+}
+
+#[cfg(all(test, feature = "cluster-context"))]
+pub(crate) fn create_validation_request<T: Serialize>(
+    object: T,
+    kind: &str,
+) -> ValidationRequest<()> {
+    let (group, version) = group_version_for_kind(kind);
+    create_validation_request_with_gvk(object, group, version, kind)
+}
+
+#[cfg(all(test, feature = "cluster-context"))]
+pub(crate) fn create_validation_request_with_gvk<T: Serialize>(
+    object: T,
+    group: &str,
+    version: &str,
+    kind: &str,
+) -> ValidationRequest<()> {
+    let value = serde_json::to_value(object).unwrap();
+    ValidationRequest {
+        settings: (),
+        request: KubernetesAdmissionRequest {
+            kind: GroupVersionKind {
+                group: group.to_owned(),
+                version: version.to_owned(),
+                kind: kind.to_owned(),
+            },
+            object: value,
+            ..Default::default()
+        },
+    }
+}
+
+#[cfg(all(test, feature = "cluster-context"))]
+fn group_version_for_kind(kind: &str) -> (&'static str, &'static str) {
+    match kind {
+        "Deployment" | "ReplicaSet" | "StatefulSet" | "DaemonSet" => ("apps", "v1"),
+        "CronJob" | "Job" => ("batch", "v1"),
+        "ReplicationController" | "Pod" | "ConfigMap" => ("", "v1"),
+        _ => ("", ""),
+    }
 }
 
 /// ValidationRequest holds the data provided to the policy at evaluation time
@@ -196,48 +232,39 @@ where
     /// It returns an error if the object is not one of those. If it is a supported object it returns the PodSpec if present, otherwise returns None.
     pub fn extract_pod_spec_from_object(&self) -> Result<Option<PodSpec>> {
         let gvk = &self.request.kind;
-        match () {
-            _ if is_resource::<Deployment>(gvk) => {
-                let deployment = serde_json::from_value::<Deployment>(self.request.object.clone())?;
-                Ok(deployment.spec.and_then(|spec| spec.template.spec))
-            }
-            _ if is_resource::<ReplicaSet>(gvk) => {
-                let replicaset = serde_json::from_value::<ReplicaSet>(self.request.object.clone())?;
-                Ok(replicaset
-                    .spec
-                    .and_then(|spec| spec.template.and_then(|template| template.spec)))
-            }
-            _ if is_resource::<StatefulSet>(gvk) => {
-                let statefulset =
-                    serde_json::from_value::<StatefulSet>(self.request.object.clone())?;
-                Ok(statefulset.spec.and_then(|spec| spec.template.spec))
-            }
-            _ if is_resource::<DaemonSet>(gvk) => {
-                let daemonset = serde_json::from_value::<DaemonSet>(self.request.object.clone())?;
-                Ok(daemonset.spec.and_then(|spec| spec.template.spec))
-            }
-            _ if is_resource::<ReplicationController>(gvk) => {
-                let replication_controller =
-                    serde_json::from_value::<ReplicationController>(self.request.object.clone())?;
-                Ok(replication_controller
-                    .spec
-                    .and_then(|spec| spec.template.and_then(|template| template.spec)))
-            }
-            _ if is_resource::<CronJob>(gvk) => {
-                let cronjob = serde_json::from_value::<CronJob>(self.request.object.clone())?;
-                Ok(cronjob
-                    .spec
-                    .and_then(|spec| spec.job_template.spec.and_then(|spec| spec.template.spec)))
-            }
-            _ if is_resource::<Job>(gvk) => {
-                let job = serde_json::from_value::<Job>(self.request.object.clone())?;
-                Ok(job.spec.and_then(|spec| spec.template.spec))
-            }
-            _ if is_resource::<Pod>(gvk) => {
-                let pod = serde_json::from_value::<Pod>(self.request.object.clone())?;
-                Ok(pod.spec)
-            }
-            _ => Err(Error::Validation(supported_pod_spec_objects_error())),
+        if is_resource::<Deployment>(gvk) {
+            let deployment = serde_json::from_value::<Deployment>(self.request.object.clone())?;
+            Ok(deployment.spec.and_then(|spec| spec.template.spec))
+        } else if is_resource::<ReplicaSet>(gvk) {
+            let replicaset = serde_json::from_value::<ReplicaSet>(self.request.object.clone())?;
+            Ok(replicaset
+                .spec
+                .and_then(|spec| spec.template.and_then(|template| template.spec)))
+        } else if is_resource::<StatefulSet>(gvk) {
+            let statefulset = serde_json::from_value::<StatefulSet>(self.request.object.clone())?;
+            Ok(statefulset.spec.and_then(|spec| spec.template.spec))
+        } else if is_resource::<DaemonSet>(gvk) {
+            let daemonset = serde_json::from_value::<DaemonSet>(self.request.object.clone())?;
+            Ok(daemonset.spec.and_then(|spec| spec.template.spec))
+        } else if is_resource::<ReplicationController>(gvk) {
+            let replication_controller =
+                serde_json::from_value::<ReplicationController>(self.request.object.clone())?;
+            Ok(replication_controller
+                .spec
+                .and_then(|spec| spec.template.and_then(|template| template.spec)))
+        } else if is_resource::<CronJob>(gvk) {
+            let cronjob = serde_json::from_value::<CronJob>(self.request.object.clone())?;
+            Ok(cronjob
+                .spec
+                .and_then(|spec| spec.job_template.spec.and_then(|spec| spec.template.spec)))
+        } else if is_resource::<Job>(gvk) {
+            let job = serde_json::from_value::<Job>(self.request.object.clone())?;
+            Ok(job.spec.and_then(|spec| spec.template.spec))
+        } else if is_resource::<Pod>(gvk) {
+            let pod = serde_json::from_value::<Pod>(self.request.object.clone())?;
+            Ok(pod.spec)
+        } else {
+            Err(Error::Validation(supported_pod_spec_objects_message()))
         }
     }
 }
@@ -251,8 +278,6 @@ mod tests {
     };
     use k8s_openapi::api::batch::v1::{CronJobSpec, JobSpec, JobTemplateSpec};
     use k8s_openapi::api::core::v1::{ConfigMap, PodTemplateSpec};
-
-    use serde::Serialize;
 
     #[test]
     fn test_extract_pod_spec_from_deployment() {
@@ -488,41 +513,6 @@ mod tests {
             Ok(_) => panic!("expected mismatched group/version/kind error"),
         };
 
-        assert_eq!(err.to_string(), supported_pod_spec_objects_error())
-    }
-
-    fn create_validation_request<T: Serialize>(object: T, kind: &str) -> ValidationRequest<()> {
-        let (group, version) = group_version_for_kind(kind);
-        create_validation_request_with_gvk(object, group, version, kind)
-    }
-
-    fn create_validation_request_with_gvk<T: Serialize>(
-        object: T,
-        group: &str,
-        version: &str,
-        kind: &str,
-    ) -> ValidationRequest<()> {
-        let value = serde_json::to_value(object).unwrap();
-        ValidationRequest {
-            settings: (),
-            request: KubernetesAdmissionRequest {
-                kind: GroupVersionKind {
-                    group: group.to_owned(),
-                    version: version.to_owned(),
-                    kind: kind.to_owned(),
-                },
-                object: value,
-                ..Default::default()
-            },
-        }
-    }
-
-    fn group_version_for_kind(kind: &str) -> (&'static str, &'static str) {
-        match kind {
-            "Deployment" | "ReplicaSet" | "StatefulSet" | "DaemonSet" => ("apps", "v1"),
-            "CronJob" | "Job" => ("batch", "v1"),
-            "ReplicationController" | "Pod" | "ConfigMap" => ("", "v1"),
-            _ => ("", ""),
-        }
+        assert_eq!(err.to_string(), supported_pod_spec_objects_message())
     }
 }

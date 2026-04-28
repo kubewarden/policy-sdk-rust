@@ -72,79 +72,71 @@ pub fn mutate_pod_spec_from_request<T: std::default::Default>(
     pod_spec: PodSpec,
 ) -> wapc_guest::CallResult {
     let gvk = &validation_request.request.kind;
-    match () {
-        _ if is_resource::<Deployment>(gvk) => {
-            let mut deployment =
-                serde_json::from_value::<Deployment>(validation_request.request.object.clone())?;
-            let mut deployment_spec = deployment.spec.unwrap_or_default();
-            deployment_spec.template.spec = Some(pod_spec);
-            deployment.spec = Some(deployment_spec);
-            mutate_request(serde_json::to_value(deployment)?)
-        }
-        _ if is_resource::<ReplicaSet>(gvk) => {
-            let mut replicaset =
-                serde_json::from_value::<ReplicaSet>(validation_request.request.object.clone())?;
-            let mut replicaset_spec = replicaset.spec.unwrap_or_default();
-            let mut template = replicaset_spec.template.unwrap_or_default();
-            template.spec = Some(pod_spec);
-            replicaset_spec.template = Some(template);
-            replicaset.spec = Some(replicaset_spec);
-            mutate_request(serde_json::to_value(replicaset)?)
-        }
-        _ if is_resource::<StatefulSet>(gvk) => {
-            let mut statefulset =
-                serde_json::from_value::<StatefulSet>(validation_request.request.object.clone())?;
-            let mut statefulset_spec = statefulset.spec.unwrap_or_default();
-            statefulset_spec.template.spec = Some(pod_spec);
-            statefulset.spec = Some(statefulset_spec);
-            mutate_request(serde_json::to_value(statefulset)?)
-        }
-        _ if is_resource::<DaemonSet>(gvk) => {
-            let mut daemonset =
-                serde_json::from_value::<DaemonSet>(validation_request.request.object.clone())?;
-            let mut daemonset_spec = daemonset.spec.unwrap_or_default();
-            daemonset_spec.template.spec = Some(pod_spec);
-            daemonset.spec = Some(daemonset_spec);
-            mutate_request(serde_json::to_value(daemonset)?)
-        }
-        _ if is_resource::<ReplicationController>(gvk) => {
-            let mut replication_controller = serde_json::from_value::<ReplicationController>(
-                validation_request.request.object.clone(),
-            )?;
-            let mut replication_controller_spec = replication_controller.spec.unwrap_or_default();
-            let mut template = replication_controller_spec.template.unwrap_or_default();
-            template.spec = Some(pod_spec);
-            replication_controller_spec.template = Some(template);
-            replication_controller.spec = Some(replication_controller_spec);
-            mutate_request(serde_json::to_value(replication_controller)?)
-        }
-        _ if is_resource::<CronJob>(gvk) => {
-            let mut cronjob =
-                serde_json::from_value::<CronJob>(validation_request.request.object.clone())?;
-            let mut cronjob_spec = cronjob.spec.unwrap_or_default();
-            let mut job_template_spec = cronjob_spec.job_template;
-            let mut job_spec = job_template_spec.spec.unwrap_or_default();
-            let mut pod_template_spec = job_spec.template;
-            pod_template_spec.spec = Some(pod_spec);
-            job_spec.template = pod_template_spec;
-            job_template_spec.spec = Some(job_spec);
-            cronjob_spec.job_template = job_template_spec;
-            cronjob.spec = Some(cronjob_spec);
-            mutate_request(serde_json::to_value(cronjob)?)
-        }
-        _ if is_resource::<Job>(gvk) => {
-            let mut job = serde_json::from_value::<Job>(validation_request.request.object.clone())?;
-            let mut job_spec = job.spec.unwrap_or_default();
-            job_spec.template.spec = Some(pod_spec);
-            job.spec = Some(job_spec);
-            mutate_request(serde_json::to_value(job)?)
-        }
-        _ if is_resource::<Pod>(gvk) => {
-            let mut pod = serde_json::from_value::<Pod>(validation_request.request.object.clone())?;
-            pod.spec = Some(pod_spec);
-            mutate_request(serde_json::to_value(pod)?)
-        }
-        _ => reject_request(Some(supported_pod_spec_objects_message()), None, None, None),
+    if is_resource::<Deployment>(gvk) {
+        let mut deployment =
+            serde_json::from_value::<Deployment>(validation_request.request.object.clone())?;
+        let mut deployment_spec = deployment.spec.unwrap_or_default();
+        deployment_spec.template.spec = Some(pod_spec);
+        deployment.spec = Some(deployment_spec);
+        mutate_request(serde_json::to_value(deployment)?)
+    } else if is_resource::<ReplicaSet>(gvk) {
+        let mut replicaset =
+            serde_json::from_value::<ReplicaSet>(validation_request.request.object.clone())?;
+        let mut replicaset_spec = replicaset.spec.unwrap_or_default();
+        let mut template = replicaset_spec.template.unwrap_or_default();
+        template.spec = Some(pod_spec);
+        replicaset_spec.template = Some(template);
+        replicaset.spec = Some(replicaset_spec);
+        mutate_request(serde_json::to_value(replicaset)?)
+    } else if is_resource::<StatefulSet>(gvk) {
+        let mut statefulset =
+            serde_json::from_value::<StatefulSet>(validation_request.request.object.clone())?;
+        let mut statefulset_spec = statefulset.spec.unwrap_or_default();
+        statefulset_spec.template.spec = Some(pod_spec);
+        statefulset.spec = Some(statefulset_spec);
+        mutate_request(serde_json::to_value(statefulset)?)
+    } else if is_resource::<DaemonSet>(gvk) {
+        let mut daemonset =
+            serde_json::from_value::<DaemonSet>(validation_request.request.object.clone())?;
+        let mut daemonset_spec = daemonset.spec.unwrap_or_default();
+        daemonset_spec.template.spec = Some(pod_spec);
+        daemonset.spec = Some(daemonset_spec);
+        mutate_request(serde_json::to_value(daemonset)?)
+    } else if is_resource::<ReplicationController>(gvk) {
+        let mut replication_controller = serde_json::from_value::<ReplicationController>(
+            validation_request.request.object.clone(),
+        )?;
+        let mut replication_controller_spec = replication_controller.spec.unwrap_or_default();
+        let mut template = replication_controller_spec.template.unwrap_or_default();
+        template.spec = Some(pod_spec);
+        replication_controller_spec.template = Some(template);
+        replication_controller.spec = Some(replication_controller_spec);
+        mutate_request(serde_json::to_value(replication_controller)?)
+    } else if is_resource::<CronJob>(gvk) {
+        let mut cronjob =
+            serde_json::from_value::<CronJob>(validation_request.request.object.clone())?;
+        let mut cronjob_spec = cronjob.spec.unwrap_or_default();
+        let mut job_template_spec = cronjob_spec.job_template;
+        let mut job_spec = job_template_spec.spec.unwrap_or_default();
+        let mut pod_template_spec = job_spec.template;
+        pod_template_spec.spec = Some(pod_spec);
+        job_spec.template = pod_template_spec;
+        job_template_spec.spec = Some(job_spec);
+        cronjob_spec.job_template = job_template_spec;
+        cronjob.spec = Some(cronjob_spec);
+        mutate_request(serde_json::to_value(cronjob)?)
+    } else if is_resource::<Job>(gvk) {
+        let mut job = serde_json::from_value::<Job>(validation_request.request.object.clone())?;
+        let mut job_spec = job.spec.unwrap_or_default();
+        job_spec.template.spec = Some(pod_spec);
+        job.spec = Some(job_spec);
+        mutate_request(serde_json::to_value(job)?)
+    } else if is_resource::<Pod>(gvk) {
+        let mut pod = serde_json::from_value::<Pod>(validation_request.request.object.clone())?;
+        pod.spec = Some(pod_spec);
+        mutate_request(serde_json::to_value(pod)?)
+    } else {
+        reject_request(Some(supported_pod_spec_objects_message()), None, None, None)
     }
 }
 
@@ -250,10 +242,11 @@ mod tests {
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "cluster-context")] {
-            use crate::request::{GroupVersionKind, KubernetesAdmissionRequest};
+            use crate::request::{
+                create_validation_request, create_validation_request_with_gvk,
+            };
 
             use jsonpath_lib as jsonpath;
-            use serde::Serialize;
             use serde::ser::StdError;
 
             use k8s_openapi::api::batch::v1::{CronJob, CronJobSpec, JobSpec, JobTemplateSpec};
@@ -350,44 +343,6 @@ mod tests {
 
         assert_eq!(version, ProtocolVersion::V1);
         Ok(())
-    }
-
-    #[cfg(feature = "cluster-context")]
-    fn create_validation_request<T: Serialize>(object: T, kind: &str) -> ValidationRequest<()> {
-        let (group, version) = group_version_for_kind(kind);
-        create_validation_request_with_gvk(object, group, version, kind)
-    }
-
-    #[cfg(feature = "cluster-context")]
-    fn create_validation_request_with_gvk<T: Serialize>(
-        object: T,
-        group: &str,
-        version: &str,
-        kind: &str,
-    ) -> ValidationRequest<()> {
-        let value = serde_json::to_value(object).unwrap();
-        ValidationRequest {
-            settings: (),
-            request: KubernetesAdmissionRequest {
-                kind: GroupVersionKind {
-                    group: group.to_owned(),
-                    version: version.to_owned(),
-                    kind: kind.to_owned(),
-                },
-                object: value,
-                ..Default::default()
-            },
-        }
-    }
-
-    #[cfg(feature = "cluster-context")]
-    fn group_version_for_kind(kind: &str) -> (&'static str, &'static str) {
-        match kind {
-            "Deployment" | "ReplicaSet" | "StatefulSet" | "DaemonSet" => ("apps", "v1"),
-            "CronJob" | "Job" => ("batch", "v1"),
-            "ReplicationController" | "Pod" => ("", "v1"),
-            _ => ("", ""),
-        }
     }
 
     #[cfg(feature = "cluster-context")]
