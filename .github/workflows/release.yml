@@ -13,7 +13,7 @@ env:
 jobs:
   ci:
     # A branch is required, and cannot be dynamic - https://github.com/actions/runner/issues/1493
-    uses: kubewarden/policy-sdk-rust/.github/workflows/tests.yml@b512cf837aee08fcd7b17edf3dfc2b12f639ab39 # main
+    uses: kubewarden/policy-sdk-rust/.github/workflows/tests.yml@95e9dac78515603f432384a9d938ca1b6cf438d7 # main
 
   release:
     name: Create release
