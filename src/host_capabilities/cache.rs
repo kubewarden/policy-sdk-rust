@@ -1,56 +1,44 @@
-// Guest-side wrappers for the `cache` host capability (RFC 0024).
-//
-// These let a policy author store and retrieve arbitrary data in a
-// policy-controlled cache, choosing the key, the value, and the TTL, instead of
-// relying on the framework's fixed-TTL internal caches.
-
 use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
 
-/// Payload of a `kubewarden.cache.set` request.
+/// Request to store a value in the cache
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct CacheSetRequest {
-    /// The unique identifier for the data being stored.
     key: String,
-    /// The arbitrary data to be stored in the cache.
-    value: Vec<u8>,
-    /// The lifespan of the data, in seconds.
+    /// Lifespan of the entry, in seconds
     ttl: u64,
+    value: Vec<u8>,
 }
 
-/// Payload of a `kubewarden.cache.get` request.
+/// Request to retrieve a value from the cache
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct CacheGetRequest {
-    /// The key of the data to retrieve.
     key: String,
 }
 
-/// Response of a `kubewarden.cache.set` operation.
+/// Response to a cache set request
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct CacheSetResponse {
-    /// `0` on success, non-zero otherwise.
+    /// `0` on success, non-zero otherwise
     code: u32,
-    /// Human readable description of the outcome.
     message: String,
 }
 
-/// Response of a `kubewarden.cache.get` operation.
+/// Response to a cache get request
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct CacheGetResponse {
-    /// `0` on success, non-zero otherwise.
+    /// `0` on success, non-zero otherwise
     code: u32,
-    /// Human readable description of the outcome.
     message: String,
-    /// The data stored under the requested key. `None` on a cache miss.
+    /// Stored value, or `None` on a cache miss
     #[serde(default)]
     value: Option<Vec<u8>>,
 }
 
 /// Store `value` under `key`, keeping it for `ttl` seconds.
 ///
-/// The key is chosen by the policy author. Keys reserved for Kubewarden's
-/// internal caches (those starting with `kubewarden_internal_`) are rejected by
-/// the host and surface here as an [`Error::Validation`].
+/// Keys reserved for Kubewarden's internal caches (those starting with
+/// `kubewarden_internal_`) are rejected by the host.
 pub fn set(key: &str, value: &[u8], ttl: u64) -> Result<()> {
     let req = CacheSetRequest {
         key: key.to_owned(),
@@ -84,9 +72,7 @@ pub fn set(key: &str, value: &[u8], ttl: u64) -> Result<()> {
     Ok(())
 }
 
-/// Retrieve the value stored under `key`.
-///
-/// Returns `Ok(None)` on a cache miss; a miss is not an error.
+/// Retrieve the value stored under `key`. Returns `Ok(None)` on a cache miss.
 pub fn get(key: &str) -> Result<Option<Vec<u8>>> {
     let req = CacheGetRequest {
         key: key.to_owned(),
