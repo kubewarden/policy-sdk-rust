@@ -121,7 +121,8 @@ pub fn mutate_pod_spec_from_request<T: std::default::Default>(
         CronJob::KIND => {
             let mut cronjob =
                 serde_json::from_value::<CronJob>(validation_request.request.object.clone())?;
-            let mut cronjob_spec = cronjob.spec.unwrap_or_default();
+            k8s_openapi::k8s_if_ge_1_36! { let mut cronjob_spec = cronjob.spec; }
+            k8s_openapi::k8s_if_le_1_35! { let mut cronjob_spec = cronjob.spec.unwrap_or_default(); }
             let mut job_template_spec = cronjob_spec.job_template;
             let mut job_spec = job_template_spec.spec.unwrap_or_default();
             let mut pod_template_spec = job_spec.template;
@@ -129,7 +130,8 @@ pub fn mutate_pod_spec_from_request<T: std::default::Default>(
             job_spec.template = pod_template_spec;
             job_template_spec.spec = Some(job_spec);
             cronjob_spec.job_template = job_template_spec;
-            cronjob.spec = Some(cronjob_spec);
+            k8s_openapi::k8s_if_ge_1_36! { cronjob.spec = cronjob_spec; }
+            k8s_openapi::k8s_if_le_1_35! { cronjob.spec = Some(cronjob_spec); }
             mutate_request(serde_json::to_value(cronjob)?)
         }
         Job::KIND => {
@@ -533,17 +535,11 @@ mod tests {
     #[cfg(feature = "cluster-context")]
     #[test]
     fn test_mutate_pod_spec_from_request_with_cronjob() -> std::result::Result<(), ()> {
-        let cronjob = CronJob {
-            spec: Some(CronJobSpec {
-                job_template: JobTemplateSpec {
-                    spec: Some(JobSpec {
-                        template: PodTemplateSpec {
-                            spec: Some(PodSpec {
-                                automount_service_account_token: Some(false),
-                                ..Default::default()
-                            }),
-                            ..Default::default()
-                        },
+        let job_template = JobTemplateSpec {
+            spec: Some(JobSpec {
+                template: PodTemplateSpec {
+                    spec: Some(PodSpec {
+                        automount_service_account_token: Some(false),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -552,6 +548,24 @@ mod tests {
             }),
             ..Default::default()
         };
+        k8s_openapi::k8s_if_ge_1_36! {
+            let cronjob = CronJob {
+                spec: CronJobSpec {
+                    job_template,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+        }
+        k8s_openapi::k8s_if_le_1_35! {
+            let cronjob = CronJob {
+                spec: Some(CronJobSpec {
+                    job_template,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            };
+        }
         let validation_request = create_validation_request(cronjob, "CronJob");
 
         let new_pod_spec = PodSpec {

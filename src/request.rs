@@ -197,9 +197,9 @@ where
             }
             CronJob::KIND => {
                 let cronjob = serde_json::from_value::<CronJob>(self.request.object.clone())?;
-                Ok(cronjob
-                    .spec
-                    .and_then(|spec| spec.job_template.spec.and_then(|spec| spec.template.spec)))
+                k8s_openapi::k8s_if_le_1_35! { let spec = cronjob.spec; }
+                k8s_openapi::k8s_if_ge_1_36! { let spec = Some(cronjob.spec); }
+                Ok(spec.and_then(|spec| spec.job_template.spec.and_then(|spec| spec.template.spec)))
             }
             Job::KIND => {
                 let job = serde_json::from_value::<Job>(self.request.object.clone())?;
@@ -313,22 +313,22 @@ mod tests {
         let pod_spec = PodSpec {
             ..Default::default()
         };
-        let cronjob = CronJob {
-            spec: Some(CronJobSpec {
-                job_template: JobTemplateSpec {
-                    spec: Some(JobSpec {
-                        template: PodTemplateSpec {
-                            spec: Some(pod_spec.clone()),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    }),
+        let job_template = JobTemplateSpec {
+            spec: Some(JobSpec {
+                template: PodTemplateSpec {
+                    spec: Some(pod_spec.clone()),
                     ..Default::default()
                 },
                 ..Default::default()
             }),
             ..Default::default()
         };
+        let cronjob_spec = CronJobSpec {
+            job_template,
+            ..Default::default()
+        };
+        k8s_openapi::k8s_if_ge_1_36! { let cronjob = CronJob { spec: cronjob_spec, ..Default::default() }; }
+        k8s_openapi::k8s_if_le_1_35! { let cronjob = CronJob { spec: Some(cronjob_spec), ..Default::default() }; }
         let validation_request = create_validation_request(cronjob, "CronJob");
 
         assert_eq!(
