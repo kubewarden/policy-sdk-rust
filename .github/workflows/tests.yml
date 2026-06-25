@@ -6,10 +6,9 @@ on:
 name: Continuous integration
 
 env:
-  # This is required because commands like `cargo check` do not
-  # read the cargo development dependencies.
-  # See https://github.com/Arnavion/k8s-openapi/issues/132
-  K8S_OPENAPI_ENABLED_VERSION: "1.33"
+  # Used by jobs that don't loop over multiple versions (clippy, doc, fmt).
+  # check and test use the Makefile targets which iterate over KUBE_API_VERSIONS.
+  K8S_OPENAPI_ENABLED_VERSION: "1.36"
 
 jobs:
   check:
@@ -21,8 +20,8 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal 
           rustup override set stable
-      - name: Run cargo check
-        run: cargo check
+      - name: Run cargo check across supported API versions
+        run: make check-all-versions
 
   spelling:
     name: Spelling check
@@ -42,12 +41,8 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal 
           rustup override set stable
-      - name: test with default features enabled
-        run: cargo test
-      - name: test with default features disabled
-        run: cargo test --no-default-features
-      - name: test with all features enabled
-        run: cargo test --all-features
+      - name: Run test suite across supported API versions
+        run: make test-all-versions
 
   fmt:
     name: Rustfmt

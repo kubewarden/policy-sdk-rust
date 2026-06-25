@@ -19,7 +19,7 @@ crd             = ["k8s-openapi-derive", "k8s-openapi/schemars", "schemars"]
 default         = ["cluster-context"]
 
 [package.metadata.docs.rs]
-features = ["cluster-context", "crd", "k8s-openapi/v1_32"]
+features = ["cluster-context", "crd", "k8s-openapi/v1_36"]
 
 [dependencies]
 cfg-if    = "1.0"
@@ -35,10 +35,10 @@ thiserror = "2.0"
 # A build error is then raised by cargo because the same version must be picked
 # by all the crates making use of k8s-openapi.
 #
-# Because of that, no feature is chosen inside of the `dependencies` section.
-# This however can lead to issues when executing commands like
-# cargo `build|check|doc`. That's because the `k8s-openapi` is specified again
-# inside of the `dev-dependencies`, this time with a k8s feature enabled
+# Because of that, no feature is chosen here. The concrete Kubernetes version is
+# selected by the consumer of the library, or — for this crate's own
+# build/check/doc/test — via the `K8S_OPENAPI_ENABLED_VERSION` environment
+# variable (set by the Makefile, CI, and `.envrc`).
 chrono             = { version = "0.4", default-features = false }
 hex                = "0.4"
 k8s-openapi        = { version = "0.28.0", default-features = false, optional = true }
@@ -58,8 +58,5 @@ wapc-guest         = "1.2"
 [dev-dependencies]
 assert-json-diff = "2.0.2"
 jsonpath_lib = "0.3.0"
-k8s-openapi = { version = "0.28.0", default-features = false, features = [
-  "v1_33",
-] }
 mockall = "0.14"
 serial_test = "3.2"
