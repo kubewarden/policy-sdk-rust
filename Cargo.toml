@@ -58,5 +58,5 @@ wapc-guest         = "1.2"
 [dev-dependencies]
 assert-json-diff = "2.0.2"
 jsonpath_lib     = "0.3.0"
-mockall          = "0.14"
+mockall          = "0.15"
 serial_test      = "3.2"
