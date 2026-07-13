@@ -141,8 +141,7 @@ pub mod crypto_v1 {
         where
             D: Deserializer<'de>,
         {
-            Ok(Option::<String>::deserialize(deserializer)?
-                .and_then(|s| if s.is_empty() { None } else { Some(s) }))
+            Ok(Option::<String>::deserialize(deserializer)?.filter(|s| !s.is_empty()))
         }
 
         pub fn serialize<S>(
