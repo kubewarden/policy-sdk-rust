@@ -44,7 +44,7 @@ hex                = "0.4"
 k8s-openapi        = { version = "0.28.0", default-features = false, optional = true }
 k8s-openapi-derive = { version = "0.28.0", optional = true }
 num                = "0.4"
-num-derive         = "0.4"
+num-derive         = "0.5"
 num-traits         = "0.2"
 oci-spec           = "0.10"
 schemars           = { version = "1.0", optional = true }
