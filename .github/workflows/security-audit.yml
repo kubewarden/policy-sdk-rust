@@ -1,0 +1,33 @@
+name: Security audit
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  push:
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: cargo deny check advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup override set stable
+      # The --locked flag pins the dependencies of cargo-deny.
+      - name: Install cargo-deny
+        run: cargo install --locked cargo-deny
+      # The Makefile holds the command. The local check and the CI check
+      # cannot become different.
+      - name: Run advisories check
+        run: make advisories
