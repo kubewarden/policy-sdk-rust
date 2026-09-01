@@ -24,10 +24,7 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal
           rustup override set stable
-      # The --locked flag pins the dependencies of cargo-deny.
       - name: Install cargo-deny
         run: cargo install --locked cargo-deny
-      # The Makefile holds the command. The local check and the CI check
-      # cannot become different.
       - name: Run advisories check
         run: make advisories
