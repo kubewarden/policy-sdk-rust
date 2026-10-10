@@ -2,6 +2,7 @@ use crate::host_capabilities::verification::{KeylessInfo, KeylessPrefixInfo};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+pub mod cache;
 pub mod crypto;
 #[cfg_attr(docsrs, doc(cfg(feature = "cluster-context")))]
 #[cfg(feature = "cluster-context")]
