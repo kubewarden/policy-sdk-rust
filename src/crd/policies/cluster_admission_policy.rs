@@ -204,7 +204,7 @@ spec:
 
     #[test]
     fn test_cluster_admission_policy_spec() {
-        let policy: ClusterAdmissionPolicy = serde_yaml::from_str(YAML_NO_DEFAULTS)
+        let policy: ClusterAdmissionPolicy = yaml_serde::from_str(YAML_NO_DEFAULTS)
             .expect("cannot deserialize ClusterAdmissionPolicy");
         assert_eq!(
             policy.metadata.name.unwrap(),
@@ -254,7 +254,7 @@ spec:
 
     #[test]
     fn test_cluster_admission_policy_spec_defaults() {
-        let policy: ClusterAdmissionPolicy = serde_yaml::from_str(YAML_WITH_DEFAULTS)
+        let policy: ClusterAdmissionPolicy = yaml_serde::from_str(YAML_WITH_DEFAULTS)
             .expect("cannot deserialize ClusterAdmissionPolicy");
         assert_eq!(policy.metadata.name.unwrap(), "default-values".to_string());
         assert!(policy.metadata.namespace.is_none());

@@ -182,7 +182,7 @@ spec:
     #[test]
     fn test_admission_policy_spec() {
         let policy: AdmissionPolicy =
-            serde_yaml::from_str(YAML_NO_DEFAULTS).expect("cannot deserialize AdmissionPolicy");
+            yaml_serde::from_str(YAML_NO_DEFAULTS).expect("cannot deserialize AdmissionPolicy");
         assert_eq!(
             policy.metadata.name.unwrap(),
             "psp-capabilities".to_string()
@@ -208,7 +208,7 @@ spec:
     #[test]
     fn test_admission_policy_spec_defaults() {
         let policy: AdmissionPolicy =
-            serde_yaml::from_str(YAML_WITH_DEFAULTS).expect("cannot deserialize AdmissionPolicy");
+            yaml_serde::from_str(YAML_WITH_DEFAULTS).expect("cannot deserialize AdmissionPolicy");
         assert_eq!(policy.metadata.name.unwrap(), "default-values".to_string());
         assert_eq!(policy.metadata.namespace.unwrap(), "default".to_string());
 
@@ -258,7 +258,7 @@ spec:
         - staging
 "#;
 
-        let err = serde_yaml::from_str::<AdmissionPolicy>(yaml).unwrap_err();
+        let err = yaml_serde::from_str::<AdmissionPolicy>(yaml).unwrap_err();
         assert!(
             err.to_string()
                 .contains("unknown field `contextAwareResources`")

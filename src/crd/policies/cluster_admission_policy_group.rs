@@ -330,7 +330,7 @@ spec:
 
     #[test]
     fn test_cluster_admission_policy_group_spec() {
-        let policy: ClusterAdmissionPolicyGroup = serde_yaml::from_str(YAML_NO_DEFAULTS)
+        let policy: ClusterAdmissionPolicyGroup = yaml_serde::from_str(YAML_NO_DEFAULTS)
             .expect("cannot deserialize ClusterAdmissionPolicyGroup");
         assert_eq!(policy.metadata.name.unwrap(), "demo".to_string());
         assert!(policy.metadata.namespace.is_none());
@@ -366,7 +366,7 @@ spec:
 
     #[test]
     fn test_cluster_admission_policy_group_spec_defaults() {
-        let policy: ClusterAdmissionPolicyGroup = serde_yaml::from_str(YAML_WITH_DEFAULTS)
+        let policy: ClusterAdmissionPolicyGroup = yaml_serde::from_str(YAML_WITH_DEFAULTS)
             .expect("cannot deserialize ClusterAdmissionPolicyGroup");
         assert_eq!(policy.metadata.name.unwrap(), "demo".to_string());
         assert!(policy.metadata.namespace.is_none());
