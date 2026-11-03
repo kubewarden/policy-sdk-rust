@@ -354,7 +354,7 @@ spec:
         - staging
 "#;
 
-        let err = serde_yaml::from_str::<AdmissionPolicyGroup>(yaml).unwrap_err();
+        let err = yaml_serde::from_str::<AdmissionPolicyGroup>(yaml).unwrap_err();
         assert!(
             err.to_string()
                 .contains("unknown field `namespaceSelector`"),
@@ -363,7 +363,7 @@ spec:
 
     #[test]
     fn test_admission_policy_group_spec() {
-        let policy: AdmissionPolicyGroup = serde_yaml::from_str(YAML_NO_DEFAULTS)
+        let policy: AdmissionPolicyGroup = yaml_serde::from_str(YAML_NO_DEFAULTS)
             .expect("cannot deserialize AdmissionPolicyGroup");
         assert_eq!(policy.metadata.name.unwrap(), "demo".to_string());
         assert_eq!(policy.metadata.namespace.unwrap(), "default".to_string());
@@ -388,7 +388,7 @@ spec:
 
     #[test]
     fn test_admission_policy_group_spec_defaults() {
-        let policy: AdmissionPolicyGroup = serde_yaml::from_str(YAML_WITH_DEFAULTS)
+        let policy: AdmissionPolicyGroup = yaml_serde::from_str(YAML_WITH_DEFAULTS)
             .expect("cannot deserialize AdmissionPolicyGroup");
         assert_eq!(policy.metadata.name.unwrap(), "demo".to_string());
         assert_eq!(policy.metadata.namespace.unwrap(), "default".to_string());
